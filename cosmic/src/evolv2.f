@@ -213,8 +213,8 @@
       REAL*8 kw3,wsun,wx
       PARAMETER(kw3=619.2d0,wsun=9.46d+07,wx=9.46d+08)
       LOGICAL output
-      REAL*8 bppout(1000,23)
-      REAL*8 bcmout(50000,42)
+      REAL*8 bppout(1000,24)
+      REAL*8 bcmout(50000,43)
 
       REAL*8 netatmp,bwindtmp,hewindtmp,alpha1tmp,lambdatmp
       REAL*8 mxnstmp,pts1tmp,pts2tmp,pts3tmp,dtptmp
@@ -2430,7 +2430,7 @@ component.
      &                          tb,ecc,rrl1,rrl2,bkick,
      &                          aj(1),aj(2),tms(1),tms(2),
      &                          massc(1),massc(2),rad(1),rad(2),
-                                zpars(11))
+     &                          zpars(11))
                   DO jj = 13,20
                      bkick(jj) = 0.0
                   ENDDO

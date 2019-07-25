@@ -12,7 +12,7 @@
 *     Author : Scott Coughlin
 *     Date :   12th March 2019
 *
-        REAL*8 bkick(20),mass1,mass2,zpars(11)
+        REAL*8 bkick(20),mass1,mass2,zpars(20)
         REAL*8 evolve_type,sep,tb,ecc,tphys,rrl1,rrl2
         REAL*8 aj1,aj2,tms1,tms2,massc1,massc2,rad1,rad2
         INTEGER jp,jj
@@ -50,7 +50,7 @@
         bpp(jp,21) = massc2
         bpp(jp,22) = rad1
         bpp(jp,23) = rad2
-        bpp(jp, 24) = zpars(11)
+        bpp(jp,24) = zpars(11)
         END
 
 ***
@@ -71,7 +71,7 @@
 *     Author : Scott Coughlin
 *     Date :   12th March 2019
 *
-        REAL*8 tphys,mass0_1,mass_1,lumin_1,rad_1,teff_1,zpars(11)
+        REAL*8 tphys,mass0_1,mass_1,lumin_1,rad_1,teff_1,zpars(20)
         REAL*8 massc_1,radc_1,menv_1,renv_1,epoch_1
         REAL*8 ospin_1,deltam_1,RROL_1
         REAL*8 mass0_2,mass_2,lumin_2,rad_2,teff_2,massc_2
@@ -126,6 +126,6 @@
         bcm(ip,40) = float(SN_2)
         bcm(ip,41) = bin_state
         bcm(ip,42) = merger_type
-        bcm(ip, 43) = zpars(11)
+        bcm(ip,43) = zpars(11)
 
         END

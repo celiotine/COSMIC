@@ -35,7 +35,7 @@ bpp_columns = ['tphys', 'mass_1', 'mass_2', 'kstar_1', 'kstar_2' ,
                'sep', 'porb', 'ecc', 'RROL_1', 'RROL_2', 'evol_type',
                'Vsys_1', 'Vsys_2', 'SNkick', 'SNtheta',
                'aj_1', 'aj_2', 'tms_1', 'tms_2',
-               'massc_1', 'massc_2', 'rad_1', 'rad_2',
+               'massc_1', 'massc_2', 'rad_1', 'rad_2', 'hfrac',
                'bin_num']
 
 bcm_columns = ['tphys', 'kstar_1', 'mass0_1', 'mass_1', 'lumin_1', 'rad_1',
@@ -45,7 +45,7 @@ bcm_columns = ['tphys', 'kstar_1', 'mass0_1', 'mass_1', 'lumin_1', 'rad_1',
                'renv_2', 'epoch_2', 'ospin_2', 'deltam_2', 'RROL_2',
                'porb', 'sep', 'ecc', 'B_0_1', 'B_0_2',
                'SNkick_1', 'SNkick_2', 'Vsys_final', 'SNtheta_final',
-               'SN_1', 'SN_2', 'bin_state', 'merger_type', 'bin_num']
+               'SN_1', 'SN_2', 'bin_state', 'merger_type', 'hfrac', 'bin_num']
 
 class Evolve(Table):
     def __init__():
