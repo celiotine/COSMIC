@@ -22,6 +22,8 @@ import scipy.integrate
 import numpy as np
 import scipy.special as ss
 import astropy.stats as astrostats
+import warnings
+from .bse_utils.zcnsts import zcnsts
 
 def filter_bpp_bcm(bcm, bpp, method, kstar1_range, kstar2_range):
     """Filter the output of bpp and bcm
@@ -517,12 +519,19 @@ def error_check(BSEDict, filters=None, convergence=None):
     if flag in BSEDict.keys():
         if BSEDict[flag] not in [0,1,2]:
             raise ValueError("'{0:s}' needs to be set to either 0, 1, or 2 (you set it to '{1:d}')".format(flag,BSEDict[flag]))
+    flag='qcflag'
+    if flag in BSEDict.keys():
+        if BSEDict[flag] not in [0,1,2,3,4]:
+            raise ValueError("'{0:s}' needs to be set to 0, 1, 2, or 3 (you set it to '{1:0.2f}')".format(flag, BSEDict[flag]))
+
     flag='qcrit_array'
     if flag in BSEDict.keys():
         if any(x < 0.0 for x in BSEDict[flag]):
             raise ValueError("'{0:s}' values must be greater than or equal to zero (you set them to '[{1:d}]')".format(flag, *BSEDict[flag]))
         if len(BSEDict[flag]) != 16:
             raise ValueError("'{0:s}' must be supplied 16 values (you supplied '{1:d}')".format(flag, len(BSEDict[flag])))
+        if (any( x != 0.0 for x in BSEDict[flag])) and (BSEDict['qcflag'] != 4):
+            raise ValueError("If '{0:s}' is used, qcflag must be set to 4".format(flag))
 
     flag='sigma'
     if flag in BSEDict.keys():
@@ -554,8 +563,8 @@ def error_check(BSEDict, filters=None, convergence=None):
             raise valueerror("'{0:s}' needs to be set to either 0 or 1 (you set it to '{1:d}')".format(flag, BSEDict[flag]))
     flag='pisn'
     if flag in BSEDict.keys():
-        if not ((BSEDict[flag] > 0) or (BSEDict[flag] == -1)):
-            raise ValueError("'{0:s}' needs to be set to either greater than 0 or -1 (you set it to '{1:0.2f}')".format(flag, BSEDict[flag]))
+        if not ((BSEDict[flag] > 0) or (BSEDict[flag] == -1) or (BSEDict[flag] == -2) or (BSEDict[flag] == -3)):
+            raise ValueError("'{0:s}' needs to be set to either greater than 0 or equal to -1, -2, or -3 (you set it to '{1:0.2f}')".format(flag, BSEDict[flag]))
     flag='bhsigmafrac'
     if flag in BSEDict.keys():
         if (BSEDict[flag] <= 0) or (BSEDict[flag] > 1):
@@ -599,6 +608,10 @@ def error_check(BSEDict, filters=None, convergence=None):
     if flag in BSEDict.keys():
         if BSEDict[flag] < 0:
             raise ValueError("'{0:s}' needs to be greater or equal to 0 (you set it to '{1:0.2f}')".format(flag, BSEDict[flag]))
+    flag='qcflag'
+    if flag in BSEDict.keys():
+        if BSEDict[flag] not in [0,1,2,3]:
+            raise ValueError("'{0:s}' needs to be set to 0, 1, 2, or 3 (you set it to '{1:0.2f}')".format(flag, BSEDict[flag]))
     flag='epsnov'
     if flag in BSEDict.keys():
         if (BSEDict[flag] < 0) or (BSEDict[flag] > 1):
@@ -609,3 +622,134 @@ def error_check(BSEDict, filters=None, convergence=None):
     # --- all numbers are valid
 
     return
+
+def check_initial_conditions(initial_binary_table):
+    """Checks initial conditions and reports warnings
+
+        Only warning provided right now is if star begins in Roche lobe
+        overflow
+    """
+    def rzamsf(m):
+        """A function to evaluate Rzams
+        ( from Tout et al., 1996, MNRAS, 281, 257 ).
+        """
+        mx = np.sqrt(m)
+        rzams = (((a[7]*m**2 + a[8]*m**6)*mx + a[9]*m**11 + 
+                  (a[10] + a[11]*mx)*m**19)/
+                  (a[12] + a[13]*m**2 + (a[14]*m**8 + m**18 + a[15]*m**19)*mx))
+
+        return rzams
+
+    def rl(Q):
+        """A function to evaluate R_L/a(q), Eggleton 1983."""
+        P = Q**(1.0/3.0)
+        RL = 0.49*P*P/(0.6*P*P + np.log(1.0+P))
+        return RL
+
+    z = np.asarray(initial_binary_table['metallicity'])
+    zpars, a = zcnsts(z)
+
+    mass1 = np.asarray(initial_binary_table['mass1_binary'])
+    mass2 = np.asarray(initial_binary_table['mass2_binary'])
+
+    rzams1 = rzamsf(mass1)
+    rzams2 = rzamsf(mass2)
+
+    # assume some time step in order to calculate sep
+    yeardy = 365.24
+    aursun = 214.95
+    tb = np.asarray(initial_binary_table['porb'])/yeardy
+    sep = aursun*(tb*tb*(mass1 + mass2))**(1.0/3.0)
+
+    q1 = mass1/mass2
+    q2 = mass2/mass1
+    rol1 = rl(q1)*sep
+    rol2 = rl(q2)*sep
+
+    # check for a ZAMS that starts in RFOL
+    mask = ((np.array(initial_binary_table['kstar_1'])==1) & (rzams1 >= rol1)) | ((initial_binary_table['kstar_2']==1) & (rzams2 >= rol2))
+    if mask.any(): 
+        warnings.warn("At least one of your initial binaries is starting in Roche Lobe Overflow:\n{0}".format(initial_binary_table[mask]))
+
+    return
+
+def convert_kstar_evol_type(bpp):
+    """Provides way to convert integer values to their string counterpart
+
+        The underlying fortran code relies on integers to indicate
+        things like the evoltuionary stage of the star as well as
+        key moments in its evolutionary track. If you pass the
+        data frame returned from running
+
+            ```Evolve.evolve```
+
+        you can convert the columns with these integer proxies
+        to their true astrophysical meaning.
+    """
+    kstar_int_to_string_dict = {
+        0 : 'Main Sequence (MS), < 0.7 M⊙',
+        1 : 'MS, > 0.7 M⊙',
+        2 : 'Hertzsprung Gap',
+        3 : 'First Giant Branch',
+        4 : 'Core Helium Burning',
+        5 : 'Early Asymptotic Giant Branch (AGB)',
+        6 : 'Thermally Pulsing AGB',
+        7 : 'Naked Helium Star MS',
+        8 : 'Naked Helium Star Hertzsprung Gap',
+        9 : 'Naked Helium Star Giant Branch',
+        10 : 'Helium White Dwarf',
+        11 : 'Carbon/Oxygen White Dwarf',
+        12 : 'Oxygen/Neon White Dwarf',
+        13 : 'Neutron Star',
+        14 : 'Black Hole',
+        15 : 'Massless Remnant',
+    }
+
+    kstar_string_to_int_dict = {v:k for k,v in kstar_int_to_string_dict.items()}
+
+    evolve_type_int_to_string_dict = {
+        1 : 'initial state',
+        2 : 'kstar change',
+        3 : 'begin Roche lobe overflow',
+        4 : 'end Roche lobe overlow',
+        5 : 'contact',
+        6 : 'coalescence',
+        7 : 'begin common envelope',
+        8 : 'end common envelope',
+        9 : 'no remnant leftover',
+        10 : 'max evolution time',
+        11 : 'binary disruption',
+        12 : 'begin symbiotic phase',
+        13 : 'end symbiotic phase',
+        14 : 'blue straggler',
+        15 : 'supernova of primary',
+        16 : 'supernova of secondary',
+    }
+
+    evolve_type_string_to_int_dict = {v:k for k,v in evolve_type_int_to_string_dict.items()}
+
+    if bpp.kstar_1.dtype in [int,float]:
+        # convert from integer to string
+        bpp['kstar_1'] = bpp['kstar_1'].astype(int)
+        bpp['kstar_1'] = bpp['kstar_1'].apply(lambda x: kstar_int_to_string_dict[x])
+    else:
+        # convert from string to integer
+        bpp['kstar_1'] = bpp['kstar_1'].apply(lambda x: kstar_string_to_int_dict[x])
+
+    if bpp.kstar_2.dtype in [int,float]:
+        # convert from integer to string
+        bpp['kstar_2'] = bpp['kstar_2'].astype(int)
+        bpp['kstar_2'] = bpp['kstar_2'].apply(lambda x: kstar_int_to_string_dict[x])
+    else:
+        # convert from string to integer
+        bpp['kstar_2'] = bpp['kstar_2'].apply(lambda x: kstar_string_to_int_dict[x])
+
+    if bpp.evol_type.dtype in [int,float]:
+        # convert from integer to string
+        bpp['evol_type'] = bpp['evol_type'].astype(int)
+        bpp['evol_type'] = bpp['evol_type'].apply(lambda x: evolve_type_int_to_string_dict[x])
+    else:
+        # convert from string to integer
+        bpp['evol_type'] = bpp['evol_type'].apply(lambda x: evolve_type_string_to_int_dict[x])
+
+    return bpp
