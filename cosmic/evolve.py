@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (C) Scott Coughlin (2017)
+# Copyright (C) Scott Coughlin (2017 - 2019)
 #
 # This file is part of cosmic.
 #
@@ -22,7 +22,6 @@
 from cosmic import _evolvebin
 from . import utils
 
-from astropy.table import Table
 from configparser import ConfigParser
 from gwpy.utils import mp as mp_utils
 
@@ -33,8 +32,9 @@ import warnings
 import os
 import sys
 
-__author__ = 'Katelyn Breivik <katie.breivik@gmail.com>'
-__credits__ = 'Scott Coughlin <scott.coughlin@ligo.org>'
+__author__ = 'Scott Coughlin <scott.coughlin@ligo.org>'
+__credits__ = ['Katelyn Breivik <katie.breivik@gmail.com>',
+               'Michael Zevin <zevin@northwestern.edu>']
 __all__ = ['Evolve']
 
 
@@ -62,24 +62,26 @@ INITIAL_CONDITIONS_PASS_COLUMNS = ['kstar_1', 'kstar_2', 'mass1_binary', 'mass2_
                              'ecsn', 'ecsn_mlow', 'aic', 'ussn', 'sigma', 'sigmadiv', 'bhsigmafrac', 'polar_kick_angle',
                              'natal_kick_array', 'qcrit_array',
                              'beta', 'xi', 'acc2', 'epsnov',
-                             'eddfac', 'gamma', 'bconst', 'ck', 'windflag', 'qcflag', 'dtp',
-                             'randomseed', 'bin_num']
+                             'eddfac', 'gamma', 'bconst', 'ck', 'windflag', 'qcflag', 'eddlimflag',
+                             'fprimc_array', 'dtp', 'randomseed', 'bin_num']
 
 if sys.version_info.major == 2 and sys.version_info.minor == 7:
     INITIAL_BINARY_TABLE_SAVE_COLUMNS = INITIAL_CONDITIONS_PASS_COLUMNS[:]
 else:
     INITIAL_BINARY_TABLE_SAVE_COLUMNS = INITIAL_CONDITIONS_PASS_COLUMNS.copy()
 
-for col in ['natal_kick_array', 'qcrit_array',]:
+for col in ['natal_kick_array', 'qcrit_array', 'fprimc_array']:
     INITIAL_BINARY_TABLE_SAVE_COLUMNS.remove(col)
 
 NATAL_KICK_COLUMNS = ['SNkick_1', 'SNkick_2', 'phi_1', 'phi_2', 'theta_1', 'theta_2']
 QCRIT_COLUMNS = ['qcrit_{0}'.format(kstar) for kstar in range(0,16)]
+FPRIMC_COLUMNS = ['fprimc_{0}'.format(kstar) for kstar in range(0,16)]
 
 INITIAL_BINARY_TABLE_SAVE_COLUMNS.extend(NATAL_KICK_COLUMNS)
 INITIAL_BINARY_TABLE_SAVE_COLUMNS.extend(QCRIT_COLUMNS)
+INITIAL_BINARY_TABLE_SAVE_COLUMNS.extend(FPRIMC_COLUMNS)
 
-class Evolve(Table):
+class Evolve(object):
     def __init__():
         '''
         initialize Evolve
@@ -87,33 +89,33 @@ class Evolve(Table):
 
     @classmethod
     def evolve(cls, initialbinarytable, **kwargs):
-        """After setting a number of initial conditions
-        we evolve the system.
+        """After setting a number of initial conditions we evolve the system.
 
         Parameters
         ----------
         initialbinarytable : DataFrame
+            Initial conditions of the binary
 
-        **kwargs :
+        **kwargs:
+            There are three ways to tell evolve and thus the fortran
+            what you want all the flags and other BSE specific
+            parameters to be. If you pass both a dictionary of flags and/or a inifile
+            and a table with the BSE parameters in the columns,
+            the column values will be overwritten by
+            what is in the dictionary or ini file.
 
-        There are three ways to tell evolve and thus the fortran
-        what you want all the flags and other BSE specific
-        parameters to be
+            NUMBER 1: PASS A DICTIONARY OF FLAGS
 
-        NUMBER 1: PASS A DICTIONARY OF FLAGS
+                 BSEDict
 
-             BSEDict
+            NUMBER 2: PASS A PANDAS DATA FRAME WITH PARAMS DEFINED AS COLUMNS
 
-        NUMBER 2: PASS A PANDAS DATA FRAME WITH PARAMS DEFINED AS COLUMNS
+                 All you need is the initialbinarytable if the all
+                 the BSE parameters are defined as columns
 
-             All you need is the initialbinarytable with columns,
-             If you pass both a dictionary of flags and/or a inifile
-             and a table with the columns, the column values will be
-             overwritten by what is in the dictionary or ini file
+            NUMBER 3: PASS PATH TO A INI FILE WITH THE FLAGS DEFINED
 
-        NUMBER 3: PASS PATH TO A INI FILE WITH THE FLAGS DEFINED
-
-            params
+                params
 
         randomseed : `int`, optional, default let numpy choose for you
             If you would like the random seed that the underlying fortran code
@@ -138,8 +140,10 @@ class Evolve(Table):
         -------
         output_bpp : DataFrame
             Evolutionary history of each binary
+
         output_bcm : DataFrame
             Final state of each binary
+
         initialbinarytable : DataFrame
             Initial conditions for each binary
         """
@@ -171,30 +175,9 @@ class Evolve(Table):
             if not os.path.isfile(params):
                 raise ValueError("File does not exist, probably supplied incorrect "
                                  "path to the inifile.")
-            # then we construct a BSEDict out of the inifile contents
-            # ---- Create configuration-file-parser object and read parameters file.
-            cp = ConfigParser()
-            cp.optionxform = str
-            cp.read(params)
+            BSEDict, _, _, _ = utils.parse_inifile(params)
 
-            # ---- Read needed variables from the inifile
-            dictionary = {}
-            for section in cp.sections():
-                dictionary[section] = {}
-                for option in cp.options(section):
-                    opt = cp.get(section, option)
-                    if opt == 'False':
-                        opt = False
-                    elif opt == 'True':
-                        opt = True
-                    try:
-                        dictionary[section][option] = json.loads(opt)
-                    except:
-                        dictionary[section][option] = opt
-
-            BSEDict = dictionary['bse']
-
-        # error check the parameters you are trying to pass to BSE 
+        # error check the parameters you are trying to pass to BSE
         # if we sent in a table with the parameter names
         # then we will temporarily create a dictionary
         # in order to verify that the values in the table
@@ -205,6 +188,7 @@ class Evolve(Table):
         # anything is weird about them, such as the star starts
         # in Roche Lobe overflow
         utils.check_initial_conditions(initialbinarytable)
+
 
         # assign some columns based on keyword arguments but that
         # can be overwritten by the params or BSEDict
@@ -233,7 +217,11 @@ class Evolve(Table):
                 initialbinarytable = initialbinarytable.assign(qcrit_array=[BSEDict['qcrit_array']] * len(initialbinarytable))
                 for kstar in range(0,16):
                     initialbinarytable.loc[:, 'qcrit_{0}'.format(kstar)] = pd.Series([BSEDict['qcrit_array'][kstar]]* len(initialbinarytable), index=initialbinarytable.index, name='qcrit_{0}'.format(kstar))
-            else: 
+            elif k == 'fprimc_array':
+                initialbinarytable = initialbinarytable.assign(fprimc_array=[BSEDict['fprimc_array']] * len(initialbinarytable))
+                for kstar in range(0,16):
+                    initialbinarytable.loc[:, 'fprimc_{0}'.format(kstar)] = pd.Series([BSEDict['fprimc_array'][kstar]]* len(initialbinarytable), index=initialbinarytable.index, name='fprimc_{0}'.format(kstar))
+            else:
                 # assigning values this way work for most of the parameters.
                 kwargs1 = {k:v}
                 initialbinarytable = initialbinarytable.assign(**kwargs1)
@@ -245,20 +233,23 @@ class Evolve(Table):
         # either a dictionary or an inifile or add more columns
         if not BSEDict:
             if ((not set(INITIAL_BINARY_TABLE_SAVE_COLUMNS).issubset(initialbinarytable.columns)) and
-                (not set(INITIAL_BINARY_TABLE_PASS_COLUMNS).issubset(initialbinarytable.columns))):
+                (not set(INITIAL_CONDITIONS_PASS_COLUMNS).issubset(initialbinarytable.columns))):
                 raise ValueError("You are passing BSE parameters as columns in the "
                                  "initial binary table but not all BSE parameters are defined. "
                                  "Please pass a BSEDict or a params file or make sure "
                                  "you have all BSE parameters as columns {0} or {1}.".format(
-                                  INITIAL_BINARY_TABLE_SAVE_COLUMNS, INITIAL_BINARY_TABLE_PASS_COLUMNS))
+                                  INITIAL_BINARY_TABLE_SAVE_COLUMNS, INITIAL_CONDITIONS_PASS_COLUMNS))
 
-        # If you did not supply the natal kick or q crit array in the BSEdict then we construct
+        # If you did not supply the natal kick or qcrit_array or fprimc_array in the BSEdict then we construct
         # it from the initial conditions table
         if (pd.Series(NATAL_KICK_COLUMNS).isin(initialbinarytable.keys()).all()) and ('natal_kick_array' not in BSEDict):
             initialbinarytable = initialbinarytable.assign(natal_kick_array=initialbinarytable[NATAL_KICK_COLUMNS].values.tolist())
 
         if (pd.Series(QCRIT_COLUMNS).isin(initialbinarytable.keys()).all()) and ('qcrit_array' not in BSEDict):
             initialbinarytable = initialbinarytable.assign(qcrit_array=initialbinarytable[QCRIT_COLUMNS].values.tolist())
+
+        if (pd.Series(FPRIMC_COLUMNS).isin(initialbinarytable.keys()).all()) and ('fprimc_array' not in BSEDict):
+            initialbinarytable = initialbinarytable.assign(fprimc_array=initialbinarytable[FPRIMC_COLUMNS].values.tolist())
 
         # need to ensure that the order of parameters that we pass to BSE
         # is correct
@@ -277,7 +268,8 @@ class Evolve(Table):
                                                f[10], f[11], f[12], f[13], f[14], f[15], f[16], f[17], f[18], f[19],
                                                f[20], f[21], f[22], f[23], f[24], f[25], f[26], f[27], f[28], f[29],
                                                f[30], f[31], f[32], f[33], f[34], f[35], f[36], f[37], f[38], f[39],
-                                               f[40], f[41], f[42], f[43], f[44], f[45], f[46], f[47], f[48])
+                                               f[40], f[41], f[42], f[43], f[44], f[45], f[46], f[47], f[48], f[49],
+                                               f[50])
 
                 try:
                     bpp = bpp[:np.argwhere(bpp[:,0] == -1)[0][0]]
@@ -288,8 +280,8 @@ class Evolve(Table):
                     raise Warning('bpp overload: mass1 = {0}, mass2 = {1}, porb = {2}, ecc = {3}, tphysf = {4}, metallicity = {5}'\
                                    .format(f[2], f[3], f[4], f[5], f[7], f[6]))
 
-                bpp_bin_numbers = np.atleast_2d(np.array([f[49]] * len(bpp))).T
-                bcm_bin_numbers = np.atleast_2d(np.array([f[49]] * len(bcm))).T
+                bpp_bin_numbers = np.atleast_2d(np.array([f[51]] * len(bpp))).T
+                bcm_bin_numbers = np.atleast_2d(np.array([f[51]] * len(bcm))).T
 
                 bpp = np.hstack((bpp, bpp_bin_numbers))
                 bcm = np.hstack((bcm, bcm_bin_numbers))

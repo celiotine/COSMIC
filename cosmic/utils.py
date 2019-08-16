@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (C) Scott Coughlin (2017)
+# Copyright (C) Scott Coughlin (2017 - 2019)
 #
 # This file is part of cosmic.
 #
@@ -23,7 +23,20 @@ import numpy as np
 import scipy.special as ss
 import astropy.stats as astrostats
 import warnings
+import ast
+import operator
+import json
+
+from configparser import ConfigParser
 from .bse_utils.zcnsts import zcnsts
+
+__author__ = 'Katelyn Breivik <katie.breivik@gmail.com>'
+__credits__ = ['Scott Coughlin <scott.coughlin@ligo.org>',
+               'Michael Zevin <zevin@northwestern.edu>']
+__all__ = ['filter_bpp_bcm', 'bcm_conv_select', 'mass_min_max_select',
+           'idl_tabulate', 'rndm', 'param_transform', 'dat_transform',
+           'dat_un_transform', 'knuth_bw_selector', 'error_check',
+           'check_initial_conditions', 'convert_kstar_evol_type']
 
 def filter_bpp_bcm(bcm, bpp, method, kstar1_range, kstar2_range):
     """Filter the output of bpp and bcm
@@ -472,6 +485,10 @@ def error_check(BSEDict, filters=None, convergence=None):
     if flag in BSEDict.keys():
         if BSEDict[flag] not in [0,1,2,3]:
             raise ValueError("'{0:s}' needs to be set to either 0, 1, 2, or 3 (you set it to '{1:d}')".format(flag, BSEDict[flag]))
+    flag='eddlimflag'
+    if flag in BSEDict.keys():
+        if BSEDict[flag] not in [0,1]:
+            raise ValueError("'{0:s}' needs to be set to either 0 or 1 (you set it to '{1:d}')".format(flag, BSEDict[flag]))
     flag='neta'
     if flag in BSEDict.keys():
         if BSEDict[flag] <= 0:
@@ -621,6 +638,13 @@ def error_check(BSEDict, filters=None, convergence=None):
     flag='ck'
     # --- all numbers are valid
 
+    flag='fprimc_array'
+    if flag in BSEDict.keys():
+        if any(x < 0.0 for x in BSEDict[flag]):
+            raise ValueError("'{0:s}' values must be greater than or equal to zero (you set them to '[{1:d}]')".format(flag, *BSEDict[flag]))
+        if len(BSEDict[flag]) != 16:
+            raise ValueError("'{0:s}' must be supplied 16 values (you supplied '{1:d}')".format(flag, len(BSEDict[flag])))
+
     return
 
 def check_initial_conditions(initial_binary_table):
@@ -634,7 +658,7 @@ def check_initial_conditions(initial_binary_table):
         ( from Tout et al., 1996, MNRAS, 281, 257 ).
         """
         mx = np.sqrt(m)
-        rzams = (((a[7]*m**2 + a[8]*m**6)*mx + a[9]*m**11 + 
+        rzams = (((a[7]*m**2 + a[8]*m**6)*mx + a[9]*m**11 +
                   (a[10] + a[11]*mx)*m**19)/
                   (a[12] + a[13]*m**2 + (a[14]*m**8 + m**18 + a[15]*m**19)*mx))
 
@@ -668,7 +692,7 @@ def check_initial_conditions(initial_binary_table):
 
     # check for a ZAMS that starts in RFOL
     mask = ((np.array(initial_binary_table['kstar_1'])==1) & (rzams1 >= rol1)) | ((initial_binary_table['kstar_2']==1) & (rzams2 >= rol2))
-    if mask.any(): 
+    if mask.any():
         warnings.warn("At least one of your initial binaries is starting in Roche Lobe Overflow:\n{0}".format(initial_binary_table[mask]))
 
     return
@@ -753,3 +777,89 @@ def convert_kstar_evol_type(bpp):
         bpp['evol_type'] = bpp['evol_type'].apply(lambda x: evolve_type_string_to_int_dict[x])
 
     return bpp
+
+def parse_inifile(inifile):
+    """Provides a method for parsing the inifile and returning dicts of each section
+    """
+    binOps = {
+        ast.Add: operator.add,
+        ast.Sub: operator.sub,
+        ast.Mult: operator.mul,
+        ast.Div: operator.truediv,
+        ast.Mod: operator.mod
+    }
+
+    def arithmetic_eval(s):
+        """Allows us to control how the strings from the inifile get parses"""
+        node = ast.parse(s, mode='eval')
+
+        def _eval(node):
+            """Different strings receive different evaluation"""
+            if isinstance(node, ast.Expression):
+                return _eval(node.body)
+            elif isinstance(node, ast.Str):
+                return node.s
+            elif isinstance(node, ast.Num):
+                return node.n
+            elif isinstance(node, ast.BinOp):
+                return binOps[type(node.op)](_eval(node.left), _eval(node.right))
+            elif isinstance(node, ast.List):
+                return [_eval(x) for x in node.elts]
+            elif isinstance(node, ast.Name):
+                result = VariableKey(item=node)
+                constants_lookup = {
+                    'True': True,
+                    'False': False,
+                    'None': None,
+                }
+                return constants_lookup.get(
+                    result.name,
+                    result,
+                )
+            elif isinstance(node, ast.NameConstant):
+                # None, True, False are nameconstants in python3, but names in 2
+                return node.value
+            else:
+                raise Exception('Unsupported type {}'.format(node))
+
+        return _eval(node.body)
+
+    # ---- Create configuration-file-parser object and read parameters file.
+    cp = ConfigParser()
+    cp.optionxform = str
+    cp.read(inifile)
+
+    # ---- Read needed variables from the inifile
+    dictionary = {}
+    for section in cp.sections():
+        dictionary[section] = {}
+        for option in cp.options(section):
+            opt = cp.get(section, option)
+            try:
+                dictionary[section][option] = arithmetic_eval(opt)
+            except:
+                dictionary[section][option] = json.loads(opt)
+
+    BSEDict = dictionary['bse']
+    seed_int = int(dictionary['rand_seed']['seed'])
+    filters = dictionary['filters']
+    convergence = dictionary['convergence']
+
+    return BSEDict, seed_int, filters, convergence
+
+class VariableKey(object):
+    """
+    A dictionary key which is a variable.
+    @ivar item: The variable AST object.
+    """
+    def __init__(self, item):
+        self.name = item.id
+
+    def __eq__(self, compare):
+        return (
+            compare.__class__ == self.__class__
+            and compare.name == self.name
+        )
+
+    def __hash__(self):
+        return hash(self.name)

@@ -69,7 +69,7 @@ with `Rodriguez+2018 <http://adsabs.harvard.edu/abs/2018PhRvL.120o1101R>`_ and `
 
 .. ipython::
 
-    In [5]: BSEDict = {'xi': 0.5, 'bhflag': 1, 'neta': 0.5, 'windflag': 3, 'wdflag': 0, 'alpha1': 1.0, 'pts1': 0.001, 'pts3': 0.02, 'pts2': 0.01, 'epsnov': 0.001, 'hewind': 1.0, 'ck': -1000, 'bwind': 0.0, 'lambdaf': 1.0, 'mxns': 3.0, 'beta': -1.0, 'tflag': 1, 'acc2': 1.5, 'nsflag': 4, 'ceflag': 0, 'eddfac': 1.0, 'ifflag': 0, 'bconst': -3000, 'sigma': 265.0, 'gamma': -2.0, 'pisn': 45.0, 'natal_kick_array' : [-100.0,-100.0,-100.0,-100.0,-100.0,-100.0], 'bhsigmafrac' : 1.0, 'polar_kick_angle' : 90, 'qcrit_array' : [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0], 'cekickflag' : 2, 'cehestarflag' : 0, 'cemergeflag' : 0, 'ecsn' : 2.5, 'ecsn_mlow' : 1.4, 'aic' : 1, 'ussn' : 0, 'sigmadiv' :-20.0, 'qcflag' : 3}
+    In [5]: BSEDict = {'xi': 0.5, 'bhflag': 1, 'neta': 0.5, 'windflag': 3, 'wdflag': 0, 'alpha1': 1.0, 'pts1': 0.001, 'pts3': 0.02, 'pts2': 0.01, 'epsnov': 0.001, 'hewind': 1.0, 'ck': -1000, 'bwind': 0.0, 'lambdaf': 1.0, 'mxns': 3.0, 'beta': -1.0, 'tflag': 1, 'acc2': 1.5, 'nsflag': 4, 'ceflag': 0, 'eddfac': 1.0, 'ifflag': 0, 'bconst': -3000, 'sigma': 265.0, 'gamma': -2.0, 'pisn': 45.0, 'natal_kick_array' : [-100.0,-100.0,-100.0,-100.0,-100.0,-100.0], 'bhsigmafrac' : 1.0, 'polar_kick_angle' : 90, 'qcrit_array' : [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0], 'cekickflag' : 2, 'cehestarflag' : 0, 'cemergeflag' : 0, 'ecsn' : 2.5, 'ecsn_mlow' : 1.4, 'aic' : 1, 'ussn' : 0, 'sigmadiv' :-20.0, 'qcflag' : 3, 'eddlimflag' : 0, 'fprimc_array' : [1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0]}
 
 Once the binary is initialized and the BSE model is set, the system is evolved with the 
 the Evolve class, which calls the evolv2.f subroutine in the BSE source code. 
@@ -95,27 +95,7 @@ You can see the different parameters included in each DataFrame using the column
 
 The units are broadly consistent with BSE; masses, radii are in Solar units, temperatures are in log-Kelvin, luminosities are in log-Solar luminosity, orbital periods are in log-seconds, semi-major axes are in solar radii, and times are in units of Myr.
 
-The evol_type column in bpp indicates the evolutionary change that occured for each line. The meaning of each number is below:
-
-=========   =====================
-evol_type   evolutionary change   
-=========   =====================
-1           initial state         
-2           kstar change          
-3           begin RL overflow     
-4           end RL overlow        
-5           contact               
-6           coalescence           
-7           common envelope       
-8           gntage called         
-9           no remnant leftover   
-10          max evolution time    
-11          binary disruption     
-12          begin symbiotic phase 
-13          end symbiotic phase   
-14          blue straggler        
-=========   =====================
-
+The evol_type column in bpp indicates the evolutionary change that occured for each line. The meaning of each number is described here, :ref:`evolve-type-table`.
 
 Each of the parameters in bpp or bcm can be accessed in the usual way for DataFrames.
 

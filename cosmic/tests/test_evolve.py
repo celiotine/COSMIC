@@ -26,10 +26,13 @@ BSEFlag_columns = ['neta', 'bwind', 'hewind', 'alpha1', 'lambdaf',
 'mxns', 'pts1', 'pts2', 'pts3',
 'ecsn', 'ecsn_mlow', 'aic', 'ussn', 'sigma', 'sigmadiv', 'bhsigmafrac', 'polar_kick_angle',
 'beta', 'xi', 'acc2', 'epsnov',
-'eddfac', 'gamma', 'bconst', 'ck', 'windflag', 'qcflag']
+'eddfac', 'gamma', 'bconst', 'ck', 'windflag', 'qcflag', 'eddlimflag']
 BSEDict = INIT_CONDITIONS[BSEFlag_columns].to_dict(orient='index')[0]
 BSEDict['qcrit_array'] = [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]
 BSEDict['natal_kick_array'] = [-100.0,-100.0,-100.0,-100.0,-100.0,-100.0]
+BSEDict['fprimc_array'] = [2.0/21.0,2.0/21.0,2.0/21.0,2.0/21.0,2.0/21.0,
+                           2.0/21.0,2.0/21.0,2.0/21.0,2.0/21.0,2.0/21.0,
+                           2.0/21.0,2.0/21.0,2.0/21.0,2.0/21.0,2.0/21.0,2.0/21.0]
 
 class TestEvolve(unittest2.TestCase):
     """`TestCase` for the cosmic
