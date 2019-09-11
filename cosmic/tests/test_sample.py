@@ -14,8 +14,8 @@ from cosmic.sample.sampler.multidim import MultiDim
 SAMPLECLASS = Sample()
 MULTIDIMSAMPLECLASS = MultiDim()
 TEST_DATA_DIR = os.path.join(os.path.split(__file__)[0], 'data')
-TOTAL_SAMPLED_MASS_KROUPA93 = 19.122329747503645
-TOTAL_SAMPLED_MASS_SALPETER55 = 12.798883571264902
+TOTAL_SAMPLED_MASS_KROUPA93 = 39.253472063203404
+TOTAL_SAMPLED_MASS_SALPETER55 = 22.575833208553195
 TOTAL_SECONDARY_MASS = 16.15470927770034
 N_BINARY_SELECT = 85
 VANHAAFTEN_BINFRAC_MAX = 0.9989087986493874
@@ -123,8 +123,8 @@ class TestSample(unittest2.TestCase):
         # Test the multidim sampler and system-by-system binary fraction
         m1, m2, porb, ecc, mass_singles, mass_binaries, n_singles, n_binaries, binfrac = MULTIDIMSAMPLECLASS.initial_sample(rand_seed = 2, size=10, nproc=1)
         self.assertEqual(np.sum(mass_singles), MOE_TOTAL_MASS)
-        self.assertEqual(binfrac.max(), MULTIDIM_BINFRAC_MAX)
-        self.assertEqual(binfrac.min(), MULTIDIM_BINFRAC_MIN)
+        self.assertAlmostEqual(binfrac.max(), MULTIDIM_BINFRAC_MAX)
+        self.assertAlmostEqual(binfrac.min(), MULTIDIM_BINFRAC_MIN)
 
     def test_sample_MultiDim_SFH(self):
         np.random.seed(2)

@@ -23,7 +23,7 @@ from cosmic import _evolvebin
 from . import utils
 
 from configparser import ConfigParser
-from gwpy.utils import mp as mp_utils
+from .mp import mp as mp_utils
 
 import numpy as np
 import pandas as pd
@@ -178,7 +178,7 @@ class Evolve(object):
             if not os.path.isfile(params):
                 raise ValueError("File does not exist, probably supplied incorrect "
                                  "path to the inifile.")
-            BSEDict, _, _, _ = utils.parse_inifile(params)
+            BSEDict, _, _, _, _ = utils.parse_inifile(params)
 
         # error check the parameters you are trying to pass to BSE
         # if we sent in a table with the parameter names

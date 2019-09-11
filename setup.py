@@ -66,22 +66,22 @@ cmdclass["sdist"] = sdist
 
 # read description
 with open('README.md', 'rb') as f:
-    longdesc = f.read().decode().strip()
+    long_description = f.read().decode().strip()
 
 # -- dependencies -------------------------------------------------------------
 
 setup_requires = [
     'setuptools',
     'pytest-runner',
+    'numpy',
 ]
 install_requires = [
     'numpy >= 1.16',
     'scipy >= 0.12.1',
-    'matplotlib >= 1.2.0, != 2.1.0, != 2.1.1',
     'astropy >= 1.1.1, < 3.0.0 ; python_version < \'3\'',
     'astropy >= 1.1.1 ; python_version >= \'3\'',
     'configparser',
-    'gwpy >= 0.14',
+    'tqdm >= 4.0',
     'pandas >= 0.24',
     'tables > 3.5.0',
     'h5py >= 1.3',
@@ -104,7 +104,8 @@ extras_require = {
 }
 
 # fortran compile
-wrapper = Extension('cosmic._evolvebin', sources=['cosmic/src/comenv.f', 'cosmic/src/corerd.f', 'cosmic/src/deltat.f', 'cosmic/src/dgcore.f', 'cosmic/src/evolv2.f', 'cosmic/src/gntage.f', 'cosmic/src/hrdiag.f', 'cosmic/src/instar.f', 'cosmic/src/kick.f', 'cosmic/src/mix.f', 'cosmic/src/mlwind.f', 'cosmic/src/mrenv.f', 'cosmic/src/ran3.f', 'cosmic/src/rl.f', 'cosmic/src/star.f', 'cosmic/src/zcnsts.f', 'cosmic/src/zfuncs.f', 'cosmic/src/concatkstars.f', 'cosmic/src/bpp_array.f'],) #extra_compile_args = ["-g","-O0"], extra_f77_compile_args=["-O0"], extra_f90_compile_args=["-O0"])
+wrapper = Extension('cosmic._evolvebin',
+                    sources=['cosmic/src/comenv.f', 'cosmic/src/corerd.f', 'cosmic/src/deltat.f', 'cosmic/src/dgcore.f', 'cosmic/src/evolv2.f', 'cosmic/src/gntage.f', 'cosmic/src/hrdiag.f', 'cosmic/src/instar.f', 'cosmic/src/kick.f', 'cosmic/src/mix.f', 'cosmic/src/mlwind.f', 'cosmic/src/mrenv.f', 'cosmic/src/ran3.f', 'cosmic/src/rl.f', 'cosmic/src/star.f', 'cosmic/src/zcnsts.f', 'cosmic/src/zfuncs.f', 'cosmic/src/concatkstars.f', 'cosmic/src/bpp_array.f'],)#extra_compile_args = ["-g","-O0"], extra_f77_compile_args=["-O0"], extra_f90_compile_args=["-O0"])
 
 # -- run setup ----------------------------------------------------------------
 
@@ -115,7 +116,7 @@ setup(name=DISTNAME,
       provides=[PACKAGENAME],
       version=__version__,
       description="Compact Object Synthesis and Monte Carlo Investigation Code",
-      long_description=longdesc,
+      long_description=long_description,
       long_description_content_type='text/markdown',
       ext_modules = [wrapper],
       author=AUTHOR,
