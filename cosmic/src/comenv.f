@@ -2,8 +2,8 @@
       SUBROUTINE COMENV(M01,M1,MC1,AJ1,JSPIN1,KW1,
      &                  M02,M2,MC2,AJ2,JSPIN2,KW2,
      &                  ZPARS,ECC,SEP,JORB,COEL,star1,star2,vk,
-     &                  bkick,ecsn,ecsn_mlow,formation1,formation2,
-     &                  ST_tide,binstate,mergertype,natal_kick,
+     &                  bkick,formation1,formation2,
+     &                  ST_tide,bhspin1,bhspin2,binstate,mergertype,
      &                  jp,tphys,switchedCE,rad,tms,evolve_type,disrupt)
       IMPLICIT NONE
       INCLUDE 'const_bse.h'
@@ -35,8 +35,8 @@
       REAL*8 RC1,RC2,Q1,Q2,RL1,RL2,LAMB1,LAMB2
       REAL*8 MENV,RENV,MENVD,RZAMS,vk
       REAL*8 Porbi,Porbf,Mcf,Menvf,qi,qf,G
-      REAL*8 natal_kick(6)
-      REAL*8 bkick(20),fallback,ecsn,ecsn_mlow,M1i,M2i
+      REAL*8 bkick(20),fallback,M1i,M2i
+      REAL*8 bhspin1,bhspin2
       common /fall/fallback
       INTEGER formation1,formation2
       REAL*8 sigmahold
@@ -65,10 +65,12 @@
       massc1_bpp = 0.d0
       massc2_bpp = 0.d0
 
-      tms1_bpp = tms(1)
-      tms2_bpp = tms(2)
-      rad1_bpp = rad(1)
-      rad2_bpp = rad(2)
+      if(using_cmc.eq.0) then
+         tms1_bpp = tms(1)
+         tms2_bpp = tms(2)
+         rad1_bpp = rad(1)
+         rad2_bpp = rad(2)
+      endif
 
 *
 * Common envelope evolution - entered only when KW1 = 2, 3, 4, 5, 6, 8 or 9.
@@ -87,7 +89,7 @@
       CALL star(KW1,M01,M1,TM1,TN,TSCLS1,LUMS,GB,ZPARS)
       CALL hrdiag(M01,AJ1,M1,TM1,TN,TSCLS1,LUMS,GB,ZPARS,
      &            R1,L1,KW1,MC1,RC1,MENV,RENV,K21,ST_tide,
-     &            ecsn,ecsn_mlow,1)
+     &            bhspin1,1)
       OSPIN1 = JSPIN1/(K21*R1*R1*(M1-MC1)+K3*RC1*RC1*MC1)
       MENVD = MENV/(M1-MC1)
       RZAMS = RZAMSF(M01)
@@ -95,16 +97,12 @@
 * Decide which CE prescription to use based on LAMBDA flag
 * MJZ: NOTE - Nanjing lambda prescription DOES NOT WORK!
 *
-      IF(LAMBDA.EQ.1.0)THEN
-         LAMB1 = CELAMF(KW,M01,L1,R1,RZAMS,MENVD,LAMBDA)
-      ELSEIF(LAMBDA.LT.0.d0)THEN
-         LAMB1 = -1.0*LAMBDA
-      ENDIF
+      LAMB1 = CELAMF(KW,M01,L1,R1,RZAMS,MENVD,LAMBDAF)
       KW = KW2
       CALL star(KW2,M02,M2,TM2,TN,TSCLS2,LUMS,GB,ZPARS)
       CALL hrdiag(M02,AJ2,M2,TM2,TN,TSCLS2,LUMS,GB,ZPARS,
      &            R2,L2,KW2,MC2,RC2,MENV,RENV,K22,ST_tide,
-     &            ecsn,ecsn_mlow,2)
+     &            bhspin2,2)
       OSPIN2 = JSPIN2/(K22*R2*R2*(M2-MC2)+K3*RC2*RC2*MC2)
 *
 * Calculate the binding energy of the giant envelope (multiplied by lambda).
@@ -117,11 +115,7 @@
       IF(KW2.GE.2.AND.KW2.LE.9.AND.KW2.NE.7)THEN
          MENVD = MENV/(M2-MC2)
          RZAMS = RZAMSF(M02)
-         IF(LAMBDA.EQ.1.0)THEN
-            LAMB2 = CELAMF(KW,M02,L2,R2,RZAMS,MENVD,LAMBDA)
-         ELSEIF(LAMBDA.LT.0.d0)THEN
-            LAMB2 = -1.0*LAMBDA
-         ENDIF
+         LAMB2 = CELAMF(KW,M02,L2,R2,RZAMS,MENVD,LAMBDAF)
          EBINDI = EBINDI + M2*(M2-MC2)/(LAMB2*R2)
 *
 * Calculate the initial orbital energy
@@ -220,7 +214,7 @@
             CALL star(KW1,M01,M1,TM1,TN,TSCLS1,LUMS,GB,ZPARS)
             CALL hrdiag(M01,AJ1,M1,TM1,TN,TSCLS1,LUMS,GB,ZPARS,
      &                  R1,L1,KW1,MC1,RC1,MENV,RENV,K21,ST_tide,
-     &                  ecsn,ecsn_mlow,1)
+     &                  bhspin1,1)
             IF(KW1.GE.13)THEN
                formation1 = 1
                if(KW1.eq.13.and.ecsn.gt.0.d0)then
@@ -300,15 +294,17 @@
                endif
                TB = (SEP_postCE/AURSUN)*
      &               SQRT(SEP_postCE/(AURSUN*(M_postCE+M2)))
-               CALL writebpp(jp,tphys,evolve_type,
+               if(using_cmc.eq.0)then
+                   CALL writebpp(jp,tphys,evolve_type,
      &                       mass1_bpp,mass2_bpp,kstar1_bpp,
      &                       kstar2_bpp,SEP_postCE,TB,ECC,
      &                       rrl1_bpp,rrl2_bpp,bkick,
      &                       aj1_bpp,aj2_bpp,tms1_bpp,tms2_bpp,
      &                       massc1_bpp,massc2_bpp,rad1_bpp,rad2_bpp)
+               endif
                CALL kick(KW1,M_postCE,M1,M2,ECC,SEP_postCE,
      &                   JORB,vk,star1,R2,fallback,bkick,
-     &                   natal_kick,disrupt)
+     &                   disrupt)
 * Returning variable state to original naming convention
                MF = M_postCE
                SEPF = SEP_postCE
@@ -317,6 +313,7 @@
                   if(KW2.ge.10) M1 = M1-M2
                   MC1 = M1
                   MC2 = 0.D0
+                  bhspin2 = 0.D0
                   M2 = 0.D0
                   KW2 = 15
                   AJ1 = 0.D0
@@ -378,6 +375,8 @@
                M2 = 0.D0
                KW1 = KW2
                KW2 = 15
+               bhspin1 = bhspin2
+               bhspin2 = 0.d0
                AJ1 = 0.D0
 *
 * The envelope mass is not required in this case.
@@ -494,7 +493,7 @@
             CALL star(KW1,M01,M1,TM1,TN,TSCLS1,LUMS,GB,ZPARS)
             CALL hrdiag(M01,AJ1,M1,TM1,TN,TSCLS1,LUMS,GB,ZPARS,
      &                  R1,L1,KW1,MC1,RC1,MENV,RENV,K21,ST_tide,
-     &                  ecsn,ecsn_mlow,1)
+     &                  bhspin1,1)
             IF(KW1.GE.13)THEN
                formation1 = 1
                if(KW1.eq.13.and.ecsn.gt.0.d0)then
@@ -573,12 +572,14 @@
                endif
                TB = (SEP_postCE/AURSUN)*
      &               SQRT(SEP_postCE/(AURSUN*(M_postCE+M2)))
-               CALL writebpp(jp,tphys,evolve_type,
+               if(using_cmc.eq.0)then
+                   CALL writebpp(jp,tphys,evolve_type,
      &                       mass1_bpp,mass2_bpp,kstar1_bpp,
      &                       kstar2_bpp,SEP_postCE,TB,ECC,
      &                       rrl1_bpp,rrl2_bpp,bkick,
      &                       aj1_bpp,aj2_bpp,tms1_bpp,tms2_bpp,
      &                       massc1_bpp,massc2_bpp,rad1_bpp,rad2_bpp)
+               endif
 * USSN: if ussn flag is set, have reduced kicks for stripped He stars (SN=8)
                if(KW1.eq.13.and.KW2.ge.13.and.ussn.eq.1)then
                   if(KW1i.ge.7.and.KW1i.le.9)then
@@ -593,7 +594,7 @@
                endif
                CALL kick(KW1,M_postCE,M1,M2,ECC,SEP_postCE,
      &                   JORB,vk,star1,R2,fallback,bkick,
-     &                   natal_kick,disrupt)
+     &                   disrupt)
 * Returning variable state to original naming convention
                MF = M_postCE
                SEPF = SEP_postCE
@@ -633,7 +634,7 @@
             CALL star(KW2,M02,M2,TM2,TN,TSCLS2,LUMS,GB,ZPARS)
             CALL hrdiag(M02,AJ2,M2,TM2,TN,TSCLS2,LUMS,GB,ZPARS,
      &                  R2,L2,KW2,MC2,RC2,MENV,RENV,K22,ST_tide,
-     &                  ecsn,ecsn_mlow,2)
+     &                  bhspin2,2)
             IF(KW2.GE.13.AND.KW.LT.13)THEN
                formation2 = 1
                if(KW2.eq.13.and.ecsn.gt.0.d0)then
@@ -714,15 +715,17 @@
                endif
                TB = (SEP_postCE/AURSUN)*
      &               SQRT(SEP_postCE/(AURSUN*(M_postCE+M1)))
-               CALL writebpp(jp,tphys,evolve_type,
+               if(using_cmc.eq.0)then
+                   CALL writebpp(jp,tphys,evolve_type,
      &                       mass1_bpp,mass2_bpp,kstar1_bpp,
      &                       kstar2_bpp,SEP_postCE,TB,ECC,
      &                       rrl1_bpp,rrl2_bpp,bkick,
      &                       aj1_bpp,aj2_bpp,tms1_bpp,tms2_bpp,
      &                       massc1_bpp,massc2_bpp,rad1_bpp,rad2_bpp)
+               endif
                CALL kick(KW2,M_postCE,M2,M1,ECC,SEP_postCE,
      &                   JORB,vk,star2,R1,fallback,bkick,
-     &                   natal_kick,disrupt)
+     &                   disrupt)
 * Returning variable state to original naming convention
                MF = M_postCE
                SEPF = SEP_postCE
@@ -732,6 +735,7 @@
                   MC2 = M2
                   MC1 = 0.D0
                   M1 = 0.D0
+                  bhspin1 = 0.D0
                   KW1 = 15
                   AJ2 = 0.D0
                   COEL = .true.
@@ -803,6 +807,7 @@
          M2 = 0.D0
          M1 = MF
          KW2 = 15
+         bhspin2 = 0.d0
 *
 * Combine the core masses.
 *
@@ -841,7 +846,7 @@
          M1i = M1
          CALL hrdiag(M01,AJ1,M1,TM1,TN,TSCLS1,LUMS,GB,ZPARS,
      &               R1,L1,KW,MC1,RC1,MENV,RENV,K21,ST_tide,
-     &               ecsn,ecsn_mlow,1)
+     &               bhspin1,1)
          if(output) write(*,*)'coel 2 5:',KW,M1,M01,R1,MENV,RENV
          IF(KW1i.LE.12.and.KW.GE.13)THEN
             formation1 = 1
@@ -915,15 +920,16 @@
                 aj2_bpp = AJ2
             endif
             TB = 0.d0
-            CALL writebpp(jp,tphys,evolve_type,
+            if(using_cmc.eq.0)then
+                CALL writebpp(jp,tphys,evolve_type,
      &                       mass1_bpp,mass2_bpp,kstar1_bpp,
      &                       kstar2_bpp,-1.d0,TB,0.d0,
      &                       rrl1_bpp,rrl2_bpp,bkick,
      &                       aj1_bpp,aj2_bpp,tms1_bpp,tms2_bpp,
      &                       massc1_bpp,massc2_bpp,rad1_bpp,rad2_bpp)
+            endif
             CALL kick(KW,MF,M1,0.d0,0.d0,-1.d0,0.d0,vk,star1,
-     &                0.d0,fallback,bkick,natal_kick,
-     &                natal_kick,disrupt)
+     &                0.d0,fallback,bkick,disrupt)
             if(output) write(*,*)'coel 2 6:',KW,M1,M01,R1,MENV,RENV
          ENDIF
          JSPIN1 = OORB*(K21*R1*R1*(M1-MC1)+K3*RC1*RC1*MC1)

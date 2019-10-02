@@ -2,91 +2,90 @@
         IMPLICIT NONE
         INCLUDE 'const_bse.h'
 
-        INTEGER kstar1,kstar2
-        REAL*8 z,ecc,tb,tphysf,mass1,mass2
+        INTEGER kstar(2)
+        REAL*8 z,ecc,tb,tphysf
+        REAL*8 mass(2)
         REAL*8 bppout(1000,15)
         REAL*8 bcmout(50000,42)
-
-        INTEGER tflagtmp,ifflagtmp,nsflagtmp,wdflagtmp
-        INTEGER bhflagtmp,windflagtmp,qcflagtmp
-        INTEGER ceflagtmp,cekickflagtmp,cemergeflagtmp,cehestarflagtmp
-        INTEGER ussntmp
-*
-        INTEGER eddlimflagtmp
-        REAL*8 netatmp,bwindtmp,hewindtmp,mxnstmp,betatmp,xitmp
-        REAL*8 acc2tmp,epsnovtmp,eddfactmp,gammatmp
-        REAL*8 alpha1tmp,lambdatmp
-        REAL*8 bconsttmp,CKtmp
-        REAL*8 sigmatmp,sigmadivtmp,bhsigmafractmp,pisntmp
-        REAL*8 polar_kick_angletmp
-*
-        REAL*8 pts1tmp,pts2tmp,pts3tmp
-
         REAL*8 dtptmp
-        REAL*8 ecsntmp,ecsn_mlowtmp
-        REAL*8 qcrit_array(16),fprimc_array(16),natal_kick_array(6)
-        INTEGER aictmp,idumtmp
+        REAL*8 bhspin(2)
+        REAL*8 mass0(2),massc(2),menv(2)
+        REAL*8 rad(2),epoch(2)
+        REAL*8 lumin(2),renv(2),radc(2)
+        REAL*8 zpars(20),bkick(20)
+        REAL*8 tacc(2),bacc(2),tms(2),B_0(2),ospin(2)
+        REAL*8 tphys
 
-        kstar1 = 1; kstar2 = 1; mass1 = 33.41813720577207;
-        mass2 = 27.46995284892487; tb = 673.3728182337667
+        kstar(1) = 1; kstar(2) = 1
+        mass(1) = 33.41813720577207
+        mass(2) = 27.46995284892487
+        tb = 673.3728182337667
         ecc = 0.6402214090190684; z = 0.002; tphysf = 13700
-        netatmp = 0.5; bwindtmp = 0.0; hewindtmp = 1.0
-        alpha1tmp = 1.0; lambdatmp = 1.0; ceflagtmp = 0
-        tflagtmp = 1; ifflagtmp = 0; wdflagtmp = 0
-        pisntmp = 45.0; bhflagtmp = 0; nsflagtmp = 3
-        cekickflagtmp = 0; cemergeflagtmp = 0; cehestarflagtmp = 0
-        mxnstmp = 3.0; pts1tmp = 0.05; pts2tmp = 0.01; pts3tmp = 0.02
-        ecsntmp = 2.5; ecsn_mlowtmp = 1.6; aictmp = 1; ussntmp = 0
-        sigmatmp = 265.0; sigmadivtmp = -20.0
-        bhsigmafractmp = 1.0; polar_kick_angletmp = 90.0
+        mass0(1) = mass(1)
+        mass0(2) = mass(2)
+
+        rad = 0.0; lumin = 0.0; massc = 0.0
+        radc = 0.0; menv = 0.0; renv = 0.0
+        ospin = 0.0; B_0 = 0.0; bacc = 0.0
+        tacc = 0.0 ; epoch = 0.0; tms = 0.0
+        bhspin = 0.0; tphys = 0.0
+        zpars = 0.0; bkick = 0.0
+
+        neta = 0.5; bwind = 0.0; hewind = 1.0
+        alpha1 = 1.0; lambdaf = 0.5; ceflag = 0
+        tflag = 1; ifflag = 0; wdflag = 0
+        pisn = 45.0; bhflag = 0; nsflag = 3
+        cekickflag = 0; cemergeflag = 0; cehestarflag = 0
+        mxns = 3.0; pts1 = 0.05; pts2 = 0.01; pts3 = 0.02
+        ecsn = 2.5; ecsn_mlow = 1.6; aic = 1; ussn = 0
+        sigma = 265.0; sigmadiv = -20.0
+        bhsigmafrac = 1.0; polar_kick_angle = 90.0
         natal_kick_array = -100.d0; qcrit_array = 0.d0;
         fprimc_array = 2.d0/21.d0;
-        betatmp = -1.0; xitmp = 0.5; acc2tmp = 1.5; epsnovtmp = 0.001
-        eddfactmp = 1.0; gammatmp = -2.0
-        bconsttmp = -3000; CKtmp = -1000; windflagtmp = 3; qcflagtmp = 1
-        eddlimflagtmp = 0; dtptmp = 13700.d0; idumtmp = 113271
+        beta = -1.0; xi = 0.5; acc2 = 1.5; epsnov = 0.001
+        eddfac = 1.0; gamma = -2.0
+        bconst = -3000; CK = -1000; windflag = 3; qcflag = 1
+        eddlimflag = 0; dtptmp = 13700.d0; idum1 = 113271
+        bhspinflag = 0; bhspinmag=0.d0
         bppout = 0.d0; bcmout = 0.d0
 
-        CALL evolv2(kstar1,kstar2,mass1,mass2,tb,ecc,z,tphysf,
-     & netatmp,bwindtmp,hewindtmp,alpha1tmp,lambdatmp,
-     & ceflagtmp,tflagtmp,ifflagtmp,wdflagtmp,pisntmp,
-     & bhflagtmp,nsflagtmp,
-     & cekickflagtmp,cemergeflagtmp,cehestarflagtmp,
-     & mxnstmp,pts1tmp,pts2tmp,pts3tmp,ecsntmp,ecsn_mlowtmp,aictmp,
-     & ussntmp,sigmatmp,sigmadivtmp,bhsigmafractmp,polar_kick_angletmp,
-     & natal_kick_array,qcrit_array,betatmp,xitmp,
-     & acc2tmp,epsnovtmp,eddfactmp,gammatmp,
-     & bconsttmp,CKtmp,windflagtmp,qcflagtmp,eddlimflagtmp,fprimc_array,
-     & dtptmp,idumtmp,bppout,bcmout)
+        CALL evolv2(kstar,mass,tb,ecc,z,tphysf,
+     & dtptmp,mass0,rad,lumin,massc,radc,
+     & menv,renv,ospin,B_0,bacc,tacc,epoch,tms,
+     & bhspin,tphys,zpars,bkick,bppout,bcmout)
 
-        kstar1 = 1; kstar2 = 1; mass1 = 53.4;
-        mass2 = 45.687; tb = 645.353
+        kstar(1) = 1; kstar(2) = 1; mass(1) = 53.4;
+        mass(2) = 45.687; tb = 645.353
         ecc = 0.566449715; z = 0.002; tphysf = 9318.775575930065
-        netatmp = 0.5; bwindtmp = 0.0; hewindtmp = 1.0
-        alpha1tmp = 1.0; lambdatmp = 1.0; ceflagtmp = 0
-        tflagtmp = 1; ifflagtmp = 0; wdflagtmp = 0
-        pisntmp = 45.0; bhflagtmp = 0; nsflagtmp = 3
-        cekickflagtmp = 0; cemergeflagtmp = 0; cehestarflagtmp = 0
-        mxnstmp = 3.0; pts1tmp = 0.001; pts2tmp = 0.01; pts3tmp = 0.02
-        ecsntmp = 2.5; ecsn_mlowtmp = 1.4; aictmp = 1; ussntmp = 0
-        sigmatmp = 265.0; sigmadivtmp = -20.0
-        bhsigmafractmp = 1.0; polar_kick_angletmp = 90.0
+
+        mass0(1) = mass(1)
+        mass0(2) = mass(2)
+
+        rad = 0.d0; lumin = 0.d0; massc = 0.d0        
+        radc = 0.d0; menv = 0.d0; renv = 0.d0
+        ospin = 0.d0; B_0 = 0.d0; bacc = 0.d0
+        tacc = 0.d0 ; epoch = 0.d0; tms = 0.d0
+        bhspin = 0.d0; tphys = 0.d0
+        zpars = 0.d0; bkick = 0.d0
+
+        neta = 0.5; bwind = 0.0; hewind = 1.0
+        alpha1 = 1.0; lambdaf = 0.5; ceflag = 0
+        tflag = 1; ifflag = 0; wdflag = 0
+        pisn = 45.0; bhflag = 0; nsflag = 3
+        cekickflag = 0; cemergeflag = 0; cehestarflag = 0
+        mxns = 3.0; pts1 = 0.001; pts2 = 0.01; pts3 = 0.02
+        ecsn = 2.5; ecsn_mlow = 1.4; aic = 1; ussn = 0
+        sigma = 265.0; sigmadiv = -20.0
+        bhsigmafrac = 1.0; polar_kick_angle = 90.0
         natal_kick_array = -100.d0; qcrit_array = 0.d0;
-        betatmp = -1.0; xitmp = 0.5; acc2tmp = 1.5; epsnovtmp = 0.001
-        eddfactmp = 1.0; gammatmp = -2.0
-        bconsttmp = -3000; CKtmp = -1000; windflagtmp = 3; qcflagtmp = 1
-        eddlimflagtmp = 0; dtptmp = 13700.d0; idumtmp = 121025
+        beta = -1.0; xi = 0.5; acc2 = 1.5; epsnov = 0.001
+        eddfac = 1.0; gamma = -2.0
+        bconst = -3000; CK = -1000; windflag = 3; qcflag = 1
+        eddlimflag = 0; dtptmp = 13700.d0; idum1 = 121025
         bppout = 0.d0; bcmout = 0.d0
 
-        CALL evolv2(kstar1,kstar2,mass1,mass2,tb,ecc,z,tphysf,
-     & netatmp,bwindtmp,hewindtmp,alpha1tmp,lambdatmp,
-     & ceflagtmp,tflagtmp,ifflagtmp,wdflagtmp,pisntmp,
-     & bhflagtmp,nsflagtmp,
-     & cekickflagtmp,cemergeflagtmp,cehestarflagtmp,
-     & mxnstmp,pts1tmp,pts2tmp,pts3tmp,ecsntmp,ecsn_mlowtmp,aictmp,
-     & ussntmp,sigmatmp,sigmadivtmp,bhsigmafractmp,polar_kick_angletmp,
-     & natal_kick_array,qcrit_array,betatmp,xitmp,
-     & acc2tmp,epsnovtmp,eddfactmp,gammatmp,
-     & bconsttmp,CKtmp,windflagtmp,qcflagtmp,eddlimflagtmp,fprimc_array,
-     & dtptmp,idumtmp,bppout,bcmout)
+        CALL evolv2(kstar,mass,tb,ecc,z,tphysf,
+     & dtptmp,mass0,rad,lumin,massc,radc,
+     & menv,renv,ospin,B_0,bacc,tacc,epoch,tms,
+     & bhspin,tphys,zpars,bkick,bppout,bcmout)
         END PROGRAM benchmarkevolv2

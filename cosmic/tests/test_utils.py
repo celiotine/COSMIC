@@ -46,7 +46,7 @@ TEST_DATA_DIR = os.path.join(os.path.split(__file__)[0], 'data')
 BPP_TEST = pd.read_hdf(os.path.join(TEST_DATA_DIR, 'utils_test.hdf'), key='bpp')
 BCM_TEST = pd.read_hdf(os.path.join(TEST_DATA_DIR, 'utils_test.hdf'), key='bcm')
 
-IBT = InitialBinaryTable.MultipleBinary(m1=[100.0, 11.8,10**1.5], m2=[85.0, 11.1,21], porb=[10000.0,2211.0,0.1], ecc=[0.65,0.55,0.0], tphysf=[13700.0,13700.0,13700.0], kstar1=[1,1,1], kstar2=[1,1,14], metallicity=[0.005,0.02,0.002], binfrac=[0.5,0.5,0.5])
+IBT = InitialBinaryTable.InitialBinaries(m1=[100.0, 11.8,10**1.5], m2=[85.0, 11.1,21], porb=[10000.0,2211.0,0.1], ecc=[0.65,0.55,0.0], tphysf=[13700.0,13700.0,13700.0], kstar1=[1,1,1], kstar2=[1,1,14], metallicity=[0.005,0.02,0.002], binfrac=[0.5,0.5,0.5])
 
 IDL_TABULATE_ANSWER = 0.5
 MASS_SUM_SINGLE = [41.0, 41.6, 42.0, 132.0, 320.0]
@@ -145,7 +145,7 @@ class TestUtils(unittest2.TestCase):
         self.assertTrue(bw.round(3) == BW_KNUTH)
 
     def test_error_check(self):
-        BSEDict = {'xi': 0.5, 'bhflag': 1, 'neta': 0.5, 'windflag': 3, 'wdflag': 0, 'alpha1': 1.0, 'pts1': 0.05, 'pts3': 0.02, 'pts2': 0.01, 'epsnov': 0.001, 'hewind': 1.0, 'ck': -1000, 'bwind': 0.0, 'lambdaf': 1.0, 'mxns': 3.0, 'beta': -1.0, 'tflag': 1, 'acc2': 1.5, 'nsflag': 4, 'ceflag': 0, 'eddfac': 1.0, 'ifflag': 0, 'bconst': -3000, 'sigma': 265.0, 'gamma': -2.0, 'pisn': 45.0, 'natal_kick_array' :[-100.0,-100.0,-100.0,-100.0,-100.0,-100.0], 'bhsigmafrac' : 1.0, 'polar_kick_angle' : 90, 'qcrit_array' : [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0], 'cekickflag' : 2, 'cehestarflag' : 0, 'cemergeflag' : 0, 'ecsn' : 2.5, 'ecsn_mlow' : 1.4, 'aic' : 1, 'ussn' : 0, 'sigmadiv' :-20.0, 'qcflag' : 3, 'eddlimflag' : 0, 'fprimc_array' : [2.0/21.0,2.0/21.0,2.0/21.0,2.0/21.0,2.0/21.0,2.0/21.0,2.0/21.0,2.0/21.0,2.0/21.0,2.0/21.0,2.0/21.0,2.0/21.0,2.0/21.0,2.0/21.0,2.0/21.0,2.0/21.0]}
+        BSEDict = {'xi': 0.5, 'bhflag': 1, 'neta': 0.5, 'windflag': 3, 'wdflag': 0, 'alpha1': 1.0, 'pts1': 0.05, 'pts3': 0.02, 'pts2': 0.01, 'epsnov': 0.001, 'hewind': 1.0, 'ck': -1000, 'bwind': 0.0, 'lambdaf': 0.5, 'mxns': 3.0, 'beta': -1.0, 'tflag': 1, 'acc2': 1.5, 'nsflag': 4, 'ceflag': 0, 'eddfac': 1.0, 'ifflag': 0, 'bconst': -3000, 'sigma': 265.0, 'gamma': -2.0, 'pisn': 45.0, 'natal_kick_array' :[-100.0,-100.0,-100.0,-100.0,-100.0,-100.0], 'bhsigmafrac' : 1.0, 'polar_kick_angle' : 90, 'qcrit_array' : [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0], 'cekickflag' : 2, 'cehestarflag' : 0, 'cemergeflag' : 0, 'ecsn' : 2.5, 'ecsn_mlow' : 1.4, 'aic' : 1, 'ussn' : 0, 'sigmadiv' :-20.0, 'qcflag' : 3, 'eddlimflag' : 0, 'fprimc_array' : [2.0/21.0,2.0/21.0,2.0/21.0,2.0/21.0,2.0/21.0,2.0/21.0,2.0/21.0,2.0/21.0,2.0/21.0,2.0/21.0,2.0/21.0,2.0/21.0,2.0/21.0,2.0/21.0,2.0/21.0,2.0/21.0]}
         filters = {'select_final_state': True, 'binary_state': [0]}
         convergence = {'convergence_params': ['mass_1', 'mass_2', 'porb', 'ecc'], 'convergence_filter': 'formation',\
                        'match': -5.0, 'convergence_limits' : {"sep" : [0,1000]}, 'match' : -3.0,\

@@ -1,7 +1,7 @@
 ***
       SUBROUTINE hrdiag(mass,aj,mt,tm,tn,tscls,lums,GB,zpars,
      &                  r,lum,kw,mc,rc,menv,renv,k2,ST_tide,
-     &                  ecsn,ecsn_mlow,kidx)
+     &                  bhspin,kidx)
       IMPLICIT NONE
       INCLUDE 'const_bse.h'
 *
@@ -27,6 +27,7 @@
       INTEGER ST_tide
 *
       real*8 mass,aj,mt,tm,tn,tscls(20),lums(10),GB(10),zpars(20)
+      real*8 bhspin
       real*8 r,lum,mc,rc,menv,renv,k2
       real*8 mch,mlp,tiny
 *      parameter(mch=1.44d0,mlp=12.d0,tiny=1.0d-14)
@@ -34,8 +35,10 @@
       real*8 mass0,mt0,mtc
       common /fall/fallback
       REAL*8 fallback
+      REAL ran3
+      EXTERNAL ran3
 *
-      real*8 ecsn,ecsn_mlow,mchold
+      real*8 mchold
 *
       real*8 avar,bvar
       real*8 thook,thg,tbagb,tau,tloop,taul,tauh,tau1,tau2,dtau,texp
@@ -556,7 +559,20 @@ C      if(mt0.gt.100.d0) mt = 100.d0
                      elseif(mc.gt.7.60)then
                         fallback = 1.d0
                      endif
-                      mc = mt
+                     if(bhspinflag.eq.0)then
+                            bhspin = bhspinmag
+                     elseif(bhspinflag.eq.1)then
+                            bhspin = ran3(idum1) * bhspinmag
+                     elseif(bhspinflag.eq.2)then
+                         if(mc.le.13.d0)then
+                             bhspin = 0.9d0
+                         elseif(mc.lt.27.d0)then
+                             bhspin = -0.064d0*mc + 1.736d0
+                         else
+                             bhspin = 0.0d0
+                         endif
+                     endif
+                     mc = mt
                   elseif(nsflag.eq.3)then
 *
 * Use the "Rapid" SN Prescription (Fryer et al. 2012, APJ, 749,91)
@@ -569,8 +585,9 @@ C      if(mt0.gt.100.d0) mt = 100.d0
                         mcx = 1.38d0
                      endif
                      if(mc.le.2.5d0)then
+                        fallback = 0.2d0 / (mt - mcx) 
                         mt = mcx + 0.2d0
-                        fallback = 0.d0
+                        if(ecsn.gt.0.d0.and.mcbagb.le.ecsn)mt=mt-0.2d0
                      elseif(mc.le.6.d0)then
                         fallback = (0.286d0*mc - 0.514d0) / (mt - mcx)
                         mt = mcx + 0.286d0*mc - 0.514d0
@@ -583,6 +600,19 @@ C      if(mt0.gt.100.d0) mt = 100.d0
                         mt = mcx + fallback*(mt - mcx)
                      elseif(mc.gt.11.d0)then
                         fallback = 1.d0
+                     endif
+                     if(bhspinflag.eq.0)then
+                            bhspin = bhspinmag
+                     elseif(bhspinflag.eq.1)then
+                            bhspin = ran3(idum1) * bhspinmag
+                     elseif(bhspinflag.eq.2)then
+                         if(mc.le.13.d0)then
+                             bhspin = 0.9d0
+                         elseif(mc.lt.27.d0)then
+                             bhspin = -0.064d0*mc + 1.736d0
+                         else
+                             bhspin = 0.0d0
+                         endif
                      endif
                      mc = mt
                   elseif(nsflag.eq.4)then
@@ -600,6 +630,7 @@ C      if(mt0.gt.100.d0) mt = 100.d0
                         mcx = 1.6d0
                      endif
                      if(mc.lt.2.5d0)then
+                        fallback = 0.2d0 / (mt - mcx) 
                         mt = mcx + 0.2
                         fallback = 0.d0
                      elseif(mc.lt.3.5d0)then
@@ -612,6 +643,19 @@ C      if(mt0.gt.100.d0) mt = 100.d0
                         mt = mcx + fallback*(mt - mcx)
                      elseif(mc.ge.11.d0)then
                         fallback = 1.d0
+                     endif
+                     if(bhspinflag.eq.0)then
+                            bhspin = bhspinmag
+                     elseif(bhspinflag.eq.1)then
+                            bhspin = ran3(idum1) * bhspinmag
+                     elseif(bhspinflag.eq.2)then
+                         if(mc.le.13.d0)then
+                             bhspin = 0.9d0
+                         elseif(mc.lt.27.d0)then
+                             bhspin = -0.064d0*mc + 1.736d0
+                         else
+                             bhspin = 0.0d0
+                         endif
                      endif
                      mc = mt
                   endif
@@ -695,19 +739,19 @@ C      if(mt0.gt.100.d0) mt = 100.d0
 
 * Fit (8th order polynomial) to Table 1 in Marchant+2018.
                      elseif(pisn.eq.-2)then
-                        if(mcbagb.ge.27.69d0.and.mcbagb.le.54.48d0)then
-                           polyfit = -4.30343374d5
-     &                            + 9.02795937d4*mcbagb
-     &                            - 8.22480314d3*mcbagb**2d0
-     &                            + 4.25048530d2*mcbagb**3d0
-     &                            - 1.36291200d1*mcbagb**4d0
-     &                            + 2.77684136d-1*mcbagb**5d0
-     &                            - 3.51104067d-3*mcbagb**6d0
-     &                            + 2.51918414d-5*mcbagb**7d0
-     &                            - 7.85424404d-8*mcbagb**8d0
+                        if(mcbagb.ge.31.99d0.and.mcbagb.le.61.10d0)then
+                           polyfit = -6.29429263d5
+     &                            + 1.15957797d5*mcbagb
+     &                            - 9.28332577d3*mcbagb**2d0
+     &                            + 4.21856189d2*mcbagb**3d0
+     &                            - 1.19019565d1*mcbagb**4d0
+     &                            + 2.13499267d-1*mcbagb**5d0
+     &                            - 2.37814255d-3*mcbagb**6d0
+     &                            + 1.50408118d-5*mcbagb**7d0
+     &                            - 4.13587235d-8*mcbagb**8d0
                            mt = polyfit
                            pisn_track(kidx)=6
-                        elseif(mcbagb.gt.54.48d0.and.
+                        elseif(mcbagb.gt.61.10d0.and.
      &                         mcbagb.lt.113.29d0)then
                            mt = 0.d0
                            kw = 15
@@ -871,7 +915,20 @@ C      if(mt0.gt.100.d0) mt = 100.d0
                      elseif(mc.gt.7.60)then
                         fallback = 1.d0
                      endif
-                      mc = mt
+                     if(bhspinflag.eq.0)then
+                            bhspin = bhspinmag
+                     elseif(bhspinflag.eq.1)then
+                            bhspin = ran3(idum1) * bhspinmag
+                     elseif(bhspinflag.eq.2)then
+                         if(mc.le.13.d0)then
+                             bhspin = 0.9d0
+                         elseif(mc.lt.27.d0)then
+                             bhspin = -0.064d0*mc + 1.736d0
+                         else
+                             bhspin = 0.0d0
+                         endif
+                     endif
+                     mc = mt
                   elseif(nsflag.eq.3)then
 *
 * Use the "Rapid" SN Prescription (Fryer et al. 2012, APJ, 749,91)
@@ -898,6 +955,19 @@ C      if(mt0.gt.100.d0) mt = 100.d0
                         mt = mcx + fallback*(mt - mcx)
                      elseif(mc.gt.11.d0)then
                         fallback = 1.d0
+                     endif
+                     if(bhspinflag.eq.0)then
+                            bhspin = bhspinmag
+                     elseif(bhspinflag.eq.1)then
+                            bhspin = ran3(idum1) * bhspinmag
+                     elseif(bhspinflag.eq.2)then
+                         if(mc.le.13.d0)then
+                             bhspin = 0.9d0
+                         elseif(mc.lt.27.d0)then
+                             bhspin = -0.064d0*mc + 1.736d0
+                         else
+                             bhspin = 0.0d0
+                         endif
                      endif
                      mc = mt
                   elseif(nsflag.eq.4)then
@@ -927,6 +997,19 @@ C      if(mt0.gt.100.d0) mt = 100.d0
                         mt = mcx + fallback*(mt - mcx)
                      elseif(mc.ge.11.d0)then
                         fallback = 1.d0
+                     endif
+                     if(bhspinflag.eq.0)then
+                            bhspin = bhspinmag
+                     elseif(bhspinflag.eq.1)then
+                            bhspin = ran3(idum1) * bhspinmag
+                     elseif(bhspinflag.eq.2)then
+                         if(mc.le.13.d0)then
+                             bhspin = 0.9d0
+                         elseif(mc.lt.27.d0)then
+                             bhspin = -0.064d0*mc + 1.736d0
+                         else
+                             bhspin = 0.0d0
+                         endif
                      endif
                      mc = mt
                   endif
@@ -1012,19 +1095,20 @@ C      if(mt0.gt.100.d0) mt = 100.d0
 
 * Fit (8th order polynomial) to Table 1 in Marchant+2018.
                      elseif(pisn.eq.-2)then
-                        if(mc.ge.27.69d0.and.mc.le.54.48d0)then
-                           polyfit = -4.30343374d5
-     &                            + 9.02795937d4*mc
-     &                            - 8.22480314d3*mc**2d0
-     &                            + 4.25048530d2*mc**3d0
-     &                            - 1.36291200d1*mc**4d0
-     &                            + 2.77684136d-1*mc**5d0
-     &                            - 3.51104067d-3*mc**6d0
-     &                            + 2.51918414d-5*mc**7d0
-     &                            - 7.85424404d-8*mc**8d0
+                        if(mc.ge.31.99d0.and.mc.le.61.10d0)then
+                           polyfit = -6.29429263d5
+     &                            + 1.15957797d5*mc
+     &                            - 9.28332577d3*mc**2d0
+     &                            + 4.21856189d2*mc**3d0
+     &                            - 1.19019565d1*mc**4d0
+     &                            + 2.13499267d-1*mc**5d0
+     &                            - 2.37814255d-3*mc**6d0
+     &                            + 1.50408118d-5*mc**7d0
+     &                            - 4.13587235d-8*mc**8d0
                            mt = polyfit
                            pisn_track(kidx)=6
-                        elseif(mc.gt.54.48d0.and.mc.lt.113.29d0)then
+                        elseif(mc.gt.61.10d0.and.
+     &                         mc.lt.113.29d0)then
                            mt = 0.d0
                            kw = 15
                            pisn_track(kidx)=7
