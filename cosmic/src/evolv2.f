@@ -160,7 +160,7 @@
 *
       INTEGER loop,iter,intpol,k,ip,jp,j1,j2,jj
       INTEGER kcomp1,kcomp2,formation(2)
-      PARAMETER(loop=20000)
+      PARAMETER(loop=900000)
       INTEGER kstar(2),kw,kst,kw1,kw2,kmin,kmax,kstar1,kstar2
       INTEGER kstar1_bpp,kstar2_bpp
 *
@@ -214,7 +214,7 @@
       PARAMETER(kw3=619.2d0,wsun=9.46d+07,wx=9.46d+08)
       LOGICAL output
       REAL*8 bppout(1000,24)
-      REAL*8 bcmout(50000,43)
+      REAL*8 bcmout(1000000,43)
 
       INTEGER tflagtmp,ifflagtmp,nsflagtmp,wdflagtmp
       INTEGER bhflagtmp,windflagtmp,qcflagtmp
