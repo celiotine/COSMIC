@@ -400,12 +400,12 @@ sampling
                          The initial binding energy of the stellar envelope 
                          goes like 1 / :math:`{\lambda}`. See `Equation 69 in Hurley+2002 <http://adsabs.harvard.edu/cgi-bin/nph-data_query?bibcode=2002MNRAS.329..897H&link_type=ARTICLE&db_key=AST&high=#page=11>`_.
 
-                            ``1.0`` : uses variable lambda prescription detailed 
+                            ``positive values`` : uses variable lambda prescription detailed 
                             in appendix of `Claeys+2014 <https://ui.adsabs.harvard.edu/abs/2014A%26A...563A..83C/abstract>`_
 
                             ``negative values`` : fixes :math:`{\lambda}` to a value of -1.0* *lambdaf*
 
-                         **lambdaf = 1.0**
+                         **lambdaf = 0.5**
 
 ``ceflag``               Selects the `de Kool 1990 <https://ui.adsabs.harvard.edu/abs/1990ApJ...358..189D/abstract>`_ 
                          model to set the initial orbital energy using the 
@@ -494,10 +494,10 @@ sampling
     alpha1 = 1.0
 
     ; lambdaf is the binding energy factor for common envelope evolution
-    ; lambdaf=1.0 uses variable lambda prescription in appendix of Claeys+2014
+    ; lambdaf>0.0 uses variable lambda prescription in appendix of Claeys+2014
     ; lambdaf<0 uses fixes lambda to a value of -1.0*lambdaf
-    ; default=1.0
-    lambdaf = 1.0
+    ; default=0.5
+    lambdaf = 0.5
 
     ; ceflag=1 used the method from de Kool 1990 for setting the initial orbital energy
     ; ceflag=0 does not use this method (uses the core mass to calculate initial orbital energy)
@@ -868,6 +868,15 @@ sampling
 
                          **tflag = 1**
 
+``ST_tide``              Activates StarTrack setup for tides following
+                         `Belczynski+2008 <https://ui.adsabs.harvard.edu/abs/2008ApJS..174..223B/abstract>`_
+
+                            ``0`` : follows `BSE <https://ui.adsabs.harvard.edu/abs/2002MNRAS.329..897H/abstract>`_
+
+                            ``1`` : follows `StarTrack <https://ui.adsabs.harvard.edu/abs/2008ApJS..174..223B/abstract>`_
+
+                         **ST_tide = 1**
+
 ``fprimc_array``         controls the scaling factor for convective tides
                          each item is set individually for its associated kstar
                          The releveant equation is `Equation 21 of Hurley+2002 <https://watermark.silverchair.com/329-4-897.pdf?token=AQECAHi208BE49Ooan9kkhW_Ercy7Dm3ZL_9Cf3qfKAc485ysgAAAnAwggJsBgkqhkiG9w0BBwagggJdMIICWQIBADCCAlIGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMYUoYtydpxVKmZePqAgEQgIICI1b5IZldHg9_rX6JacIe-IR042LnNi-4F9DMp-2lm3djjQ8xehKOv5I0VBjSNJfa6n-FErAH7ed1llADY7tMDTvqo1GHKBMDslNku5XDGfmae0sF-Zp5ndeGoZsyqISABLHEbdY4VFl8Uz_6jzAuBjGztnuxVmUh9bKIOaxuDpfB3Mn2xOfP9lcCVkjzQ0JWzr98nQNmVwDkI9bPv98Ab46BjBdGdcBKajCC-sqASjtmAQS2h6SGTTBqyRAyigqXcPtWf3Ye1SbxtL3zag6_Lf01rgCoUCK9eT_pavb5F8vVkUTMWbZQ79DWxn5pfZYi72C7_BtlPoUnS8Gs3wvw18BTIaHTKblwh225DcXuTEh_ngMmRvPEVctvG8tjlr9md-eFK0cEsq0734eGYtnwxeqvFxcWsW6mRbXrFHFsInQK16j6n36XuCimY665l_-HPAuu-lTTlwpMTUR7K1eYMBsco_tp_TdxEipRNvBpaWZX3J0FxPMzi84Y01UvWiW69pxb-LLTpf8aG4YCm9asRFyfDZ9nbSdgrIlCiuzy7QSmkvsHOaTEecmwRimFRycDuIuWLvA_tILmYCIM2KzvqYJSVCQPJH39xEHZG8LbMqImwAVYO3H90qh-90gNrtZn4ofSskcgqxeqfZly9CPfmEevX5s-SlLHMh1N6gdZwenvMC0kTWg_rskbvGiANtuGngD-kKDbunGpYJU_nI7uDnhGtdY#page=5>`_
@@ -889,6 +898,13 @@ sampling
     ; tflag=1 activates tidal circularisation
     ; default=1
     tflag=1
+
+    ; ST_tide sets which tidal method to use. 0=Hurley+2002, 1=StarTrack: Belczynski+2008
+    ; Note, here startrack method does not use a better integration scheme (yet) but simply
+    ; follows similar set up to startrack (including initial vrot, using roche-lobe check
+    ; at periastron, and circularisation and synchronisation at start of MT).
+    ; default=1
+    ST_tide=1
 
     ; fprimc_array controls the scaling factor for convective tides
     ; each item is set individually for its associated kstar
@@ -953,6 +969,14 @@ sampling
     PULSAR FLAGS
 
 =======================  =====================================================
+``bdecayfac``            Activates different models for accretion induced field decay; see 
+                         `Kiel+2008 <https://academic.oup.com/mnras/article/388/1/393/1013977>`_.
+
+                            ``0`` : uses an exponential decay
+
+                            ``1`` : uses an inverse decay
+
+                         **bdecayfac = 1**
 ``bconst``               Sets the magnetic field decay time-scale for pulsars following
                          Section 3 of `Kiel+2008 <https://academic.oup.com/mnras/article/388/1/393/1013977>`_.
 
@@ -975,6 +999,11 @@ sampling
     ;; PULSAR FLAGS ;;;
     ;;;;;;;;;;;;;;;;;;;
 
+    ; bdecayfac determines which accretion induced field decay method to 
+    ; use from Kiel+2008: 0=exp, 1=inverse
+    ; default=1
+    bdecayfac=1
+
     ; bconst is related to magnetic field evolution of pulsars, see Kiel+2008
     ; default=-3000
     bconst=-3000
@@ -996,6 +1025,17 @@ sampling
                              ``positive values`` : sets the mixing factor
 
                          **rejuv_fac = 1.0**
+``rejuvflag``            Sets whether to use the orginal prescription for mixing 
+                         of main-sequence stars (based on equation 80 of `Hurley+2002 <https://ui.adsabs.harvard.edu/abs/2002MNRAS.329..897H/abstract>`_)
+                         or whether to use the main-sequence lifetimes of the two stars 
+                         (instead of the full lifetime, as is the BSE default). 
+                         
+                         
+                            ``0`` : no modifications to BSE
+
+                            ``1`` : modified mixing times 
+
+                         **rejuvflag = 0**
 =======================  =====================================================
 
 .. code-block:: ini
@@ -1008,3 +1048,63 @@ sampling
     ; paper. This was originally hard coded to 0.1, which leads massive 
     ; stars to potentially have extended main sequence lifetimes. 
     rejuv_fac=1.0
+
+    ; rejuvflag toggles between the original BSE prescription for MS mixing and 
+    ; lifetimes of stars (equation 80) and a more correct version that uses only the 
+    ; MS lifetime of stars (flag 1)
+    ; default=1
+    rejuvflag=1
+
+.. note::
+
+    MAGNETIC BRAKING FLAGS
+
+=======================  =====================================================
+``htpmb``                Activates different models for magnetic braking
+
+                            ``0`` : no modifications to BSE
+
+                            ``1`` : follows `Ivanona and Taam 2003 <https://ui.adsabs.harvard.edu/abs/2003ApJ...599..516I/abstract>`_
+
+                         **htpmb = 1**
+=======================  =====================================================
+
+.. code-block:: ini
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ;; MAGNETIC BRAKING FLAGS ;;;
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    
+    ; htpmb allows for different magnetic braking models. 
+    ; 0=follows BSE paper Section 2.4
+    ; 1=follows Ivanova & Taam 2003 method which kicks in later than the standard
+    ; default=1
+    htpmb=1
+
+
+.. note::
+
+    MISC FLAGS
+
+=======================  =====================================================
+``ST_cr``                Activates different convective vs radiative boundaries
+
+                            ``0`` : no modifications to BSE
+
+                            ``1`` : follows `StarTrack <https://ui.adsabs.harvard.edu/abs/2008ApJS..174..223B/abstract>`_
+ 
+                         **ST_cr = 1**
+=======================  =====================================================
+
+.. code-block:: ini
+
+    ;;;;;;;;;;;;;;;;;
+    ;; MISC FLAGS ;;;
+    ;;;;;;;;;;;;;;;;;
+    
+    ; ST_cr sets which convective/radiative boundary to use
+    ; 0=follows BSE paper
+    ; 1=follows StarTrack (Belcyznski+2008)
+    ; default=1
+    ST_cr=1
+
