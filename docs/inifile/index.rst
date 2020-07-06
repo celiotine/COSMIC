@@ -19,16 +19,6 @@ filters
 -------
 
 =======================  ===============================================================
-``select_final_state``   The bcm array generally returns the first and last
-                         state of the binary system. Since we already
-                         save the initial conditions in cosmic-pop, usually
-                         we opt to throw out the initial state of the binary
-                         from this array and only keep the final state in the
-                         bcm array. The allowed values are:
-
-                            ``True`` : bcm array only contains final state of binary
-
-                            ``False`` : bcm array contains multiple binary states 
 ``binary_state``         Each binary system will end its evolution in one of
                          three states
 
@@ -41,19 +31,45 @@ filters
                             ``2`` : the system was disrupted before the end of 
                             its evolution
 
+``timestep_conditions``  timestep_conditions allow a user to pick specific time resolutions
+                         to print at targeted stages of the binary evolution.
+                         This is used in conjuction with the [bse] section value dtp to determine the
+                         timestep resolution for printing to the bcm array.
+
+
+                         As an example, if you only want to print to the bcm array with
+                         1.0 Myr timesteps while a binary has not merged or been disrupted 
+                         you would specify this as:
+
+                            ``timestep_conditions =[['binstate==0', 'dtp=1.0']]``
+
+                         Special examples include
+
+                            ``timestep_conditions = 'dtp=None'`` : only the final time step is printed to the bcm array
+
+                            ``timestep_conditions = 'dtp=1.0'`` : a single timestep applied to all evolutionary stages of the binary
+
 =======================  ===============================================================
 
 .. code-block:: ini
 
     [filters]
-    ; select_final_state will retain only the final entry of the bcm arry if set to True
-    ; default=True
-    select_final_state = True
-
     ; binary_state determines which types of binaries endstates to retain
     ; 0 alive today, 1 merged, 2 disrupted
     ; default=[0,1]
     binary_state = [0,1]
+
+    ; timestep_conditions allow a user to pick specific time resolutions
+    ; to print at targetted stages of the binary evolution
+    ; This is used in conjuction with the [bse] section value dtp to determine the resolution
+    ; at which thing are printed into the so called bcm array
+    ; For example, if you only want dtp set to a value while the system is
+    ; intact i.e. has not merged or been disrupted you could do so with the following
+    ; timestep_conditions =[['binstate==0', 'dtp=1.0']]
+    ; Special examples include
+    ; timestep_conditions = 'dtp=None', only the final time step is printed to the bcm array
+    ; timestep_conditions = 'dtp=1.0', a single timestep applied to all evolutionary stages of the binary
+    timestep_conditions = 'dtp=None'
 
 sampling
 --------
@@ -70,24 +86,23 @@ sampling
                             ``multidim`` : initialize binaries with 
                             multidimensional parameter distributions according to 
                             `Moe & Di Stefano 2017 <http://adsabs.harvard.edu/abs/2017ApJS..230...15M>`_
-``galaxy_component``     There are four star formation histories implemented in 
-                         COSMIC, one each for the Milky Way thin disk, thick 
-                         disk, and bulge; and one that assumes a delta-function
-                         burst of star formation. Their assumptions are as follows:
 
-                            ``ThinDisk`` : constant star formation over 10 Gyr
+``SF_start``             Sets the time in the past when star formation initiates in Myr.
+                         For a start time at the beginning of a Hubble time, specify:
 
-                            ``ThickDisk`` : 1 Gyr burst of constant star formation
-                            11 Gyr in the past
+                            ``SF_start`` : 13700.0
 
-                            ``Bulge`` : 1 Gyr burst of constant star formation
-                            10 Gyr in the past
+``SF_duration``          Sets the duration of constant star formation from ``SF_start``
+                         in Myr. For a single burst specify:
 
-                            ``DeltaBurst`` : single burst of star formation 13.7
-                            Gyr in the past
+                            ``SF_duration`` : 0.0
+
+                         For a constant star formation over a Hubble time, specify:
+
+                            ``SF_duration`` : 13700.0
 
 ``metallicity``          Single value for the metallicity of the population
-                         where solar metallicity is Z = 0.02
+                         where solar metallicity is defined using *zsun* defined below
 
 =======================  ===================================================================================
 
@@ -99,9 +114,11 @@ sampling
     ; initial conditions follow Moe & Di Stefano (2017) (multidim)
     sampling_method=multidim
 
-    ; Galaxy Components. Options include Bulge, ThinDisk, ThickDisk, and DeltaBurst
-    ; Think Star Formation History with which to use as your basis for sampling
-    galaxy_component = DeltaBurst
+    ; Sets the time in the past when star formation initiates in Myr
+    SF_start = 13700.0
+
+    ; Sets the duration of constant star formation in Myr
+    SF_duration = 0.0
 
     ; Metallicity of the population of initial binaries
     metallicity = 0.02
@@ -110,8 +127,7 @@ sampling
 -------------
 
 ===========================  ===================================================================================
-``convergence_params``  
-                             A list of parameters you would like to verify have converged
+``convergence_params``       A list of parameters you would like to verify have converged
                              to a single distribution shape.
                              Options include: ``mass_1``, ``mass_2``, ``sep``, ``porb``,
                              ``ecc``, ``massc_1``, ``massc_2``, ``rad_1``, ``rad_2``
@@ -154,12 +170,14 @@ sampling
                              and is calculated as match = Log\ :sub:`10` (1-convergence)
 
 ``bcm_bpp_initCond_filter``  The bcm_bpp_initCond_filter will filter the bcm, bpp, and initCond 
-                             DataFrames to only contain the binaries that satisfy the conv DataFrame.
+                             DataFrames to only contain the binaries that satisfy the constraints
+                             from ``convergence_limits`` and/or ``convergence_filer`` 
 
                                 ``True``: bcm, bpp, initCond will contain only the binaries which 
                                 are in the conv DataFrame
 
-                                ``False``: bcm, bpp, initCond will contain all systems which satisfy the                                 final kstar selection and will **not** be filtered.
+                                ``False``: bcm, bpp, initCond will contain all systems which satisfy the                                 
+                                final kstar selection and will **not** be filtered.
 
                              **bcm_bpp_initCond_filter=False**
 
@@ -215,7 +233,7 @@ sampling
 -----------
 
 ====================  ========================================================
-``rand_seed``         Seed used to seed numpy.random.seed
+``rand_seed``         Seed used to for numpy.random.seed
 ====================  ========================================================
 
 .. code-block:: ini
@@ -250,6 +268,7 @@ sampling
                          Giant Branch (GB, CHeB, AGB, HeGB) stars
 
                          **pts2 = 0.01** following `Hurley+2000 <https://ui.adsabs.harvard.edu/abs/2000MNRAS.315..543H/abstract>`_
+
 ``pts3``                 determines the timesteps chosen in each evolution phase as
                          decimal fractions of the time taken in that phase for
                          HG, HeMS stars
@@ -263,11 +282,6 @@ sampling
     ;;; SAMPLING FLAGS ;;;
     ;;;;;;;;;;;;;;;;;;;;;;
 
-    ; dtp is the timestep (in Myr) for outputting to the bcm array
-    ; if dtp=0, will print every timestep (not recommended)
-    ; if not set, it will automatically set to dtp=tphsyf (default)
-    ;dtp = 1.0
-
     ; pts1,pts2,pts3 determine the timesteps chosen in each
     ;                 pts1 - MS                  (default=0.001, see Banerjee+ 2019)
     pts1=0.001
@@ -275,6 +289,28 @@ sampling
     pts2=0.01
     ;                 pts3 - HG, HeMS            (default=0.02)
     pts3=0.02
+
+.. note::
+
+    METALLICITY FLAGS
+
+=======================  =====================================================
+``zsun``                 Sets the metallicity of the Sun which primarily affects
+                         stellar winds. 
+
+                         **zsun = 0.014** following `Asplund 2009 <https://ui.adsabs.harvard.edu/abs/2009ARA%26A..47..481A/abstract>`_
+=======================  =====================================================
+
+.. code-block:: ini
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;
+    ;;; METALLICITY FLAGS ;;;
+    ;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; specify the value for Solar metallicity, which primarily affects
+    ; winds in BSE
+    ; default = 0.014 (Asplund 2009)
+    zsun = 0.014
+
 
 .. note::
 
@@ -294,6 +330,7 @@ sampling
                             Humphreys-Davidson limit 
 
                          **windflag = 3**
+
 ``eddlimflag``           Limits the mass-loss rate of low-metallicity stars near 
                          the Eddington limit
                          (see `Grafener+2011 <https://ui.adsabs.harvard.edu/abs/2011A%26A...535A..56G/abstract>`_, `Giacobbo+2018 <https://ui.adsabs.harvard.edu/abs/2018MNRAS.474.2959G/abstract>`_).
@@ -303,6 +340,7 @@ sampling
                             ``1`` : applies Eddington limit
 
                          **eddlimflag = 0**
+
 ``neta``                 Reimers mass-loss coefficent (`Equation 106 SSE <http://adsabs.harvard.edu/cgi-bin/nph-data_query?bibcode=2000MNRAS.315..543H&link_type=ARTICLE&db_key=AST&high=#page=19>`_).
                          Note: this equation has a typo. There is an extra 
                          :math:`{\eta}` out front; the correct rate is directly proportional
@@ -312,22 +350,26 @@ sampling
                             ``positive value`` : supplies :math:`{\eta}` to `Equation 106 SSE <http://adsabs.harvard.edu/cgi-bin/nph-data_query?bibcode=2000MNRAS.315..543H&link_type=ARTICLE&db_key=AST&high=#page=19>`_
 
                          **neta = 0.5**
+
 ``bwind``                Binary enhanced mass loss parameter. 
                          See `Equation 12 BSE <http://adsabs.harvard.edu/cgi-bin/nph-data_query?bibcode=2002MNRAS.329..897H&link_type=ARTICLE&db_key=AST&high=#page=3>`_.
 
                             ``positive value`` : supplies B\ :sub:`w` to `Equation 12 BSE <http://adsabs.harvard.edu/cgi-bin/nph-data_query?bibcode=2002MNRAS.329..897H&link_type=ARTICLE&db_key=AST&high=#page=3>`_
 
                          **bwind = 0, inactive for single**
+
 ``hewind``               Helium star mass loss parameter: 10\ :sup:`-13` *hewind* L\ :sup:`2/3` gives He star mass-loss. Equivalent to 1 - :math:`{\mu}` in the last equation on `page 19 of SSE <http://adsabs.harvard.edu/cgi-bin/nph-data_query?bibcode=2000MNRAS.315..543H&link_type=ARTICLE&db_key=AST&high=#page=19>`_.
 
                          **hewind = 0.5**
+
 ``beta``                 Wind velocity factor: v\ :sub:`wind` :sup:`2` goes like *beta*. See `Equation 9 of Hurley+2002 <http://adsabs.harvard.edu/cgi-bin/nph-data_query?bibcode=2002MNRAS.329..897H&link_type=ARTICLE&db_key=AST&high=#page=3>`_.
 
                             ``negative value`` : StarTrack (`Belczynski+2008 <https://ui.adsabs.harvard.edu/abs/2008ApJS..174..223B/abstract>`_)
 
                             ``positive value`` : supplies :math:`{\beta}`\ :sub:`w` to `Equation 9 of Hurley+2002 <http://adsabs.harvard.edu/cgi-bin/nph-data_query?bibcode=2002MNRAS.329..897H&link_type=ARTICLE&db_key=AST&high=#page=3>`_
 
-                         **beta = 0.125**
+                         **beta = -1.0**
+
 ``xi``                   Wind accretion efficiency factor, which gives the fraction 
                          of angular momentum lost via winds from the primary that 
                          transfers to the spin angular momentum of the companion. 
@@ -335,7 +377,8 @@ sampling
 
                             ``positive value`` : supplies :math:`{\mu}`\ :sub:`w` in `Equation 11 of Hurley+2002 <http://adsabs.harvard.edu/cgi-bin/nph-data_query?bibcode=2002MNRAS.329..897H&link_type=ARTICLE&db_key=AST&high=#page=3>`_ 
 
-                         **xi = 1.0**
+                         **xi = 0.5**
+
 ``acc2``                 Bondi-Hoyle wind accretion factor where the mean wind accretion rate onto the secondary is proportional to *acc2*. See `Equation 6 in Hurley+2002 <http://adsabs.harvard.edu/cgi-bin/nph-data_query?bibcode=2002MNRAS.329..897H&link_type=ARTICLE&db_key=AST&high=#page=2>`_.
 
                             ``positive value`` : supplies :math:`{\alpha}`\ :sub:`w` in `Equation 6 in Hurley+2002 <http://adsabs.harvard.edu/cgi-bin/nph-data_query?bibcode=2002MNRAS.329..897H&link_type=ARTICLE&db_key=AST&high=#page=2>`_
@@ -387,6 +430,16 @@ sampling
 
     COMMON ENVELOPE FLAGS
 
+**Note:** there are cases where a common envelope is forced regardless of the 
+critical mass ratio for unstable mass transfer. In the following cases, a 
+common envelope occurs regardless of the choices below:
+
+**contact** : the stellar radii go into contact (common for similar ZAMS systems)
+
+**periapse contact** : the periapse distance is smaller than either of the stellar radii (common for highly eccentric systems)
+
+**core Roche overflow** : either of the stellar radii overflow their component's Roche radius (in this case, mass transfer from the convective core is always dynamically unstable)
+
 =======================  =====================================================
 ``alpha1``               Common-envelope efficiency parameter which scales the 
                          efficiency of transferring orbital energy to the 
@@ -395,16 +448,19 @@ sampling
                             ``positive values`` : supplies :math:`{\alpha}` to `Equation 71 in Hurley+2002 <http://adsabs.harvard.edu/cgi-bin/nph-data_query?bibcode=2002MNRAS.329..897H&link_type=ARTICLE&db_key=AST&high=#page=11>`_
 
                          **alpha1 = 1.0**
+
 ``lambdaf``              Binding energy factor for common envelope evolution. 
                          The initial binding energy of the stellar envelope 
                          goes like 1 / :math:`{\lambda}`. See `Equation 69 in Hurley+2002 <http://adsabs.harvard.edu/cgi-bin/nph-data_query?bibcode=2002MNRAS.329..897H&link_type=ARTICLE&db_key=AST&high=#page=11>`_.
 
                             ``positive values`` : uses variable lambda prescription detailed 
                             in appendix of `Claeys+2014 <https://ui.adsabs.harvard.edu/abs/2014A%26A...563A..83C/abstract>`_
+                            where lambdaf is the fraction of the ionization energy that can go into ejecting
+                             the envelope; to use this prescription without extra ionization energy, set lambdaf=0
 
                             ``negative values`` : fixes :math:`{\lambda}` to a value of -1.0* *lambdaf*
 
-                         **lambdaf = 0.5**
+                         **lambdaf = 0.0**
 
 ``ceflag``               Selects the `de Kool 1990 <https://ui.adsabs.harvard.edu/abs/1990ApJ...358..189D/abstract>`_ 
                          model to set the initial orbital energy using the 
@@ -419,6 +475,7 @@ sampling
                             model
 
                          **ceflag = 0** 
+
 ``cekickflag``           Selects which mass and separation values to use when 
                          a supernova occurs during the CE and a kick
                          needs to be applied.
@@ -441,6 +498,7 @@ sampling
                             ``1`` : causes these systems to merge in the CE
 
                          **cemergeflag = 0**
+
 ``cehestarflag``         Uses fitting formulae from `Tauris+2015 <https://ui.adsabs.harvard.edu/abs/2015MNRAS.451.2123T/abstract>`_
                          for evolving RLO systems with a helium star donor 
                          and compact object accretor.
@@ -454,6 +512,7 @@ sampling
                             ``2`` : uses Tauris+2015 fits for both final mass and final period
 
                          **cehestarflag = 0**
+
 ``qcflag``               Selects model to determine critical mass ratios for the
                          onset of unstable mass transfer and/or a common envelope
                          during RLO. 
@@ -472,15 +531,33 @@ sampling
                             for GB/AGB stars
 
                             ``4`` : follows `Section 5.1 of Belcyznski+2008 <https://ui.adsabs.harvard.edu/abs/2008ApJS..174..223B/abstract>`_ except for WD donors which follow BSE
+
+                            ``5`` : follows `Section 2.3 of Neijssel+2020 <https://ui.adsabs.harvard.edu/abs/2019MNRAS.490.3740N/abstract>`_ Mass transfer from stripped stars is always assumed to be dynamically stable
+
                          **qcflag = 1**
+
+                         .. csv-table:: Comparison of Q Crit Values (Donor Mass/Accretor Mass) For Each Donor Kstar Type Across Flag Options
+                            :file: qcrit_table.csv
+                            :header-rows: 1
+
+
+                         Eq.1: ``qc = 0.362 + 1.0/(3.0*(1.0 - massc(j1)/mass(j1)))``, which is from Hjellming & Webbink 1983
+
+                         Eq.2: ``qc = (1.67d0-zpars(7)+2.d0*(massc(j1)/mass(j1))**5)/2.13d0``, which is from Claeys+ 2014
 
 ``qcrit_array``          Array with length: 16 for user-input values for the 
                          critical mass ratios that govern the onset of unstable
                          mass transfer and a common envelope. Each item is set 
                          individually for its associated kstar, and a value of 
                          0.0 will apply prescription of the qcflag for that kstar.
-                         
+
+                         **Note:** there are cases where a common envelope is forced 
+                         regardless of the critical mass ratio for unstable mass
+                         transfer; in the following cases, a common envelope occurs
+                         regardless of the qcrit or qcflag                          
+
                          **qcrit_array = [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]**
+
 =======================  =====================================================
 
 .. code-block:: ini
@@ -529,6 +606,8 @@ sampling
     ; 1: BSE but with Hjellming & Webbink, 1987, ApJ, 318, 794 GB/AGB stars
     ; 2: following binary_c from Claeys+2014 Table 2
     ; 3: following binary_c from Claeys+2014 Table 2 but with Hjellming & Webbink, 1987, ApJ, 318, 794 GB/AGB stars
+    ; 4: following StarTrack from Belczynski+2008 Section 5.1. WD donors follow standard BSE
+    ; 5: following COMPAS from Neijssel+2020 Section 2.3. Stripped stars are always dynamically stable
     ; default=3
     qcflag=3
 
@@ -540,14 +619,40 @@ sampling
 .. note::
 
     KICK FLAGS
-
 =======================  =====================================================
+``kickflag``             Sets the particular natal kick prescription to use
+                         Note that ``sigmadiv``, ``bhflag``, ``bhsigmafrac``, 
+                         ``aic``, and ``ussn``, which are described below, are
+                         only used when ``kickflag=0``            
+
+                            ``0`` : The standard COSMIC kick prescription, where
+                            kicks are drawn from a bimodal distribution with 
+                            standard FeCCSN getting a kick drawn from a Maxwellian
+                            distribution with dispersion parameter ``sigma`` and ECSN 
+                            are drawn according to ``sigmadiv``. This setting has 
+                            additional possible options for ``bhflag``, ``bhsigmafrac``, 
+                            ``aic`` and ``ussn``.
+
+                            ``-1`` : Natal kicks are drawn according to ``sigma`` and 
+                            scaled by the ejecta mass and remnant mass following Eq. 1 of 
+                            `Giacobbo & Mapelli 2020 <https://ui.adsabs.harvard.edu/abs/2020ApJ...891..141G/abstract>`_
+
+                            ``-2`` : Natal kicks are drawn according to ``sigma`` and 
+                            scaled by just the ejecta mass following Eq. 2 of 
+                            `Giacobbo & Mapelli 2020 <https://ui.adsabs.harvard.edu/abs/2020ApJ...891..141G/abstract>`_
+
+                            ``-3`` : Natal kicks are drawn according to Eq. 1 of 
+                            `Bray & Eldridge 2016 <https://ui.adsabs.harvard.edu/abs/2016MNRAS.461.3747B/abstract>`_
+
+                         **default=0**
+
 ``sigma``                Sets the dispersion in the Maxwellian for the 
                          SN kick velocity in km/s
 
                             ``positive value`` : sets Maxwellian dispersion 
 
                          **default=265.0**
+
 ``bhflag``               Sets the model for how SN kicks are applied to BHs 
                          where bhflag != 0 allows velocity kick at BH formation
                     
@@ -563,6 +668,7 @@ sampling
                             with dispersion = *sigma* selected above
 
                          **bhflag = 1**
+
 ``ecsn``                 Allows for electron capture SN and sets the 
                          maximum ECSN mass range at the time of SN
 
@@ -574,6 +680,7 @@ sampling
                             use ecsn = 2.5
 
                          **ecsn = 2.5**
+
 ``ecsn_mlow``            Sets the low end of the ECSN mass range
 
                             ``positive values`` : `BSE (Hurley+2002) <https://ui.adsabs.harvard.edu/abs/2002MNRAS.329..897H/abstract>`_
@@ -582,6 +689,7 @@ sampling
                             use ecsn_mlow = 1.4
 
                          **ecsn_mlow = 1.4**
+
 ``sigmadiv``             Sets the modified ECSN kick strength
                          
                          ``positive values`` : divide *sigma* above by *sigmadiv*
@@ -589,6 +697,7 @@ sampling
                          ``negative values`` : sets the ECSN *sigma* value
 
                          **sigmadiv = -20.0**
+
 ``aic``                  reduces kick strengths for accretion induced collapse SN
                          according to *sigmadiv*
 
@@ -599,6 +708,7 @@ sampling
                             NOTE: this will applies even if ecsn = 0.0
 
                          **aic = 1**
+
 ``ussn``                 Reduces kicks according to the *sigmadiv* selection
                          for ultra-stripped supernovae which happen whenever
                          a He-star undergoes a CE with a compact companion
@@ -609,6 +719,7 @@ sampling
                             ``1`` : sets kick strength according to *sigmadiv*
 
                          **ussn = 0**
+
 ``pisn``                 Allows for (pulsational) pair instability supernovae
                          and sets either the model to use or the maximum mass 
                          of the remnant.
@@ -626,6 +737,7 @@ sampling
                             remnant
 
                          **pisn = 45.0**
+
 ``bhsigmafrac``          Sets a fractional modification which scales down *sigma*
                          for BHs. This works in addition to whatever is chosen for 
                          *bhflag*, and is applied to *sigma* **before** the *bhflag*
@@ -634,6 +746,7 @@ sampling
                             ``values between [0, 1]`` : reduces *sigma* by *bhsigmafrac*   
 
                          **bhsigmafrac = 1.0**
+
 ``polar_kick_angle``     Sets the opening angle of the SN kick relative to the 
                          pole of the exploding star, where 0 gives strictly polar
                          kicks and 90 gives fully isotropic kicks
@@ -641,21 +754,29 @@ sampling
                             ``values between [0, 90]`` : sets opening angle for SN kick
 
                          **polar_kick_angle = 90.0**
-``natal_kick_array``     Array of lenght: 6 which takes user input values to fix
-                         the SN natal kick, where the array is 
-                         formatted as: [vk1, vk2, phi1, phi2, theta1, theta2].
+
+``natal_kick_array``     Array of dimensions: (2,5) which takes user input values
+                         for the SN natal kick, where the first row corresponds to the 
+                         first star and the second row corresponds to the second star and
+                         columns are: [vk, phi, theta, eccentric_anomaly, rand_seed].
                          NOTE: any numbers outside these ranges will be sampled
                          in the standard ways detailed above.
 
-                            ``vk1, vk2`` : valid on the range [0, inf] 
+                            ``vk`` : valid on the range [0, inf] 
 
-                            ``phi1, phi2`` : co-lateral polar angles valid from 
-                            [-pi/2, pi/2]
+                            ``phi`` : co-lateral polar angle in degrees, valid from 
+                            [-90, 90]
 
-                            ``theta1, theta2`` : azimuthal angles valid from 
-                            [0, 2pi]
+                            ``theta`` : azimuthal angle in degrees, valid from 
+                            [0, 360]
 
-                         **natal_kick_array = [-100.0,-100.0,-100.0,-100.0,-100.0,-100.0]**
+                            ``eccentric_anomaly`` : eccentric anomaly in degreed, 
+                            valid from [0, 360]
+
+                            ``rand_seed`` : supplied if restarting evolution after
+                            a supernova has already occurred
+
+                         **natal_kick_array = [[-100.0,-100.0,-100.0,-100.0,0.0][-100.0,-100.0,-100.0,-100.0,0.0]]**
 =======================  =====================================================
 
 .. code-block:: ini
@@ -663,6 +784,19 @@ sampling
     ;;;;;;;;;;;;;;;;;;
     ;;; KICK FLAGS ;;;
     ;;;;;;;;;;;;;;;;;;
+
+    ; kickflag sets the particular kick prescription to use
+    ; kickflag=0 uses the standard kick prescription, where kicks are drawn from a bimodal
+    ; distribution based on whether they go through FeCCSN or ECSN/USSN
+    ; kickflag=-1 uses the prescription from Giacobbo & Mapelli 2020 (Eq. 1)
+    ; with their default parameters (<m_ns>=1.2 Msun, <m_ej>=9 Msun)
+    ; kickflag=-2 uses the prescription from Giacobbo & Mapelli 2020 (Eq. 2),
+    ; which does not scale the kick by <m_ns>
+    ; kickflag=-3 uses the prescription from Bray & Eldridge 2016 (Eq. 1)
+    ; with their default parameters (alpha=70 km/s, beta=120 km/s)
+    ; Note: sigmadiv, bhflag, bhsigmafrac, aic, and ussn are only used when kickflag=0
+    ; default = 0
+    kickflag = 0
 
     ; sigma sets is the dispersion in the Maxwellian for the SN kick velocity in km/s
     ; default=265.0
@@ -716,20 +850,20 @@ sampling
     ; default=90.0
     polar_kick_angle = 90.0
 
-    ; natal_kick_array is a 6-length array for user-input values for the SN natal kick
-    ; formatted as: (vk1, vk2, phi1, phi2, theta1, theta2)
-    ; vk is valid on the range [0, inf], phi are the co-lateral polar angles valid from [-pi/2, pi/2], and theta are azimuthal angles [0, 2*pi]
+    ; natal_kick_array is a (2,5) array for user-input values for the SN natal kick
+    ; The first and second row specify the natal kick information for the first and second star, and columns are formatted as: (vk, phi, theta, eccentric anomaly, rand_seed)
+    ; vk is valid on the range [0, inf], phi are the co-lateral polar angles (in degrees) valid from [-90.0, 90.0], theta are azimuthal angles (in degrees) valid from [0, 360], and eccentric anomaly are the eccentric anomaly of the orbit at the time of SN (in degrees) valid from [0, 360]
     ; any number outside of these ranges will be sampled in the standard way in kick.f
-    ; default=[-100.0,-100.0,-100.0,-100.0,-100.0,-100.0]
-    natal_kick_array=[-100.0,-100.0,-100.0,-100.0,-100.0,-100.0]
+    ; rand_seed is for reproducing a supernova if the the system is started mid-evolution, set to 0 if starting binary from the beginning
+    ; default=[[-100.0,-100.0,-100.0,-100.0,0],[-100.0,-100.0,-100.0,-100.0,0.0]]
+    natal_kick_array=[[-100.0,-100.0,-100.0,-100.0,0],[-100.0,-100.0,-100.0,-100.0,0.0]]
 
 .. note::
 
     REMNANT MASS FLAGS
 
-=======================  =====================================================
-``nsflag``               Determines the remnant mass prescription used for
-                         NSs and BHs.
+===================  =====================================================
+``remnantflag``      Determines the remnant mass prescription used for NSs and BHs.
 
                             ``0`` : follows `Section 6 of Hurley+2000 <https://ui.adsabs.harvard.edu/abs/2000MNRAS.315..543H/abstract>`_
                             (default BSE)
@@ -738,18 +872,28 @@ sampling
 
                             ``2`` : follows `Belczynski+2008 <https://ui.adsabs.harvard.edu/abs/2008ApJS..174..223B/abstract>`_
 
-                            ``3`` : follows the rapid prescription from `Fryer+2012 <https://ui.adsabs.harvard.edu/abs/2012ApJ...749...91F/abstract>`_
+                            ``3`` : follows the rapid prescription from `Fryer+2012 <https://ui.adsabs.harvard.edu/abs/2012ApJ...749...91F/abstract>`_, with updated proto-core mass from `Giacobbo & Mapelli 2020 <https://ui.adsabs.harvard.edu/abs/2020ApJ...891..141G/abstract>`_
 
                             ``4`` : delayed prescription from `Fryer+2012 <https://ui.adsabs.harvard.edu/abs/2012ApJ...749...91F/abstract>`_
 
-                         **nsflag = 3**
-``mxns``                 Sets the boundary between the maximum NS mass
-                         and the minimum BH mass
+                     **remnantflag = 3**
+
+``mxns``             Sets the boundary between the maximum NS mass
+                     and the minimum BH mass
 
                             ``positive values`` : sets the NS/BH mass bounary
 
-                         **mxns = 2.5**
-=======================  =====================================================
+                     **mxns = 3.0**
+
+``rembar_massloss``  Determines the prescriptions for mass conversion from
+                     baryonic to gravitational mass during the collapse of 
+                     the proto-compact object
+
+                            ``positive values`` : sets the maximum amount of mass loss, which should be about 10% of the maximum mass of an iron core (:math:`{\sim 5 \mathrm{M}_\odot}` Fryer, private communication)
+
+                            ``-1 < *rembar_massloss* < 0`` : assumes that proto-compact objects lose a constant fraction of their baryonic mass when collapsing to a black hole (e.g., *rembar_massloss* = -0.1 gives the black hole a gravitational mass that is 90% of the proto-compact object's baryonic mass)
+                     **rembar_massloss = 0.5**
+===================  =====================================================
 
 .. code-block:: ini
 
@@ -757,16 +901,26 @@ sampling
     ;;; REMNANT MASS FLAGS ;;;
     ;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-    ; nsflag determines the remnant mass prescription used
-    ; nsflag=0: default BSE; nsflag=1: Belczynski et al. 2002, ApJ, 572, 407
-    ; nsflag=2: Belczynski et al. 2008; nsflag=3: rapid prescription (Fryer+ 2012)
-    ; nsflag=4: delayed prescription (Fryer+ 2012)
+    ; remnantflag determines the remnant mass prescription used
+    ; remnantflag=0: default BSE
+    ; remnantflag=1: Belczynski et al. 2002, ApJ, 572, 407
+    ; remnantflag=2: Belczynski et al. 2008
+    ; remnantflag=3: rapid prescription (Fryer+ 2012), updated as in Giacobbo & Mapelli 2020 
+    ; remnantflag=4: delayed prescription (Fryer+ 2012)
     ; default=3
-    nsflag=3
+    remnantflag=3
 
     ; mxns sets the maximum NS mass
     ; default=2.5
     mxns=2.5
+
+    ; rembar_massloss determines the mass conversion from baryonic to
+    ; gravitational mass
+    ; rembar_massloss >= 0: sets the maximum amount of mass loss
+    ; -1 < rembar_massloss < 0: uses the prescription from Fryer et al. 2012,
+    ; assuming for BHs Mrem = (1+rembar_massloss)*Mrem,bar for negative rembar_massloss
+    ; default=0.5
+    rembar_massloss=0.5
 
 .. note::
 
@@ -785,6 +939,7 @@ sampling
 ``bhspinmag``            Sets either the spin of all BHs or the upper limit of the uniform distribution for BH spins 
 
                             ``values >= 0.0`` : spin or upper limit value
+
                          **bhspinmag = 0.0**
 =======================  ===============================================================
 
@@ -834,7 +989,7 @@ sampling
                             ``>0`` : assumes that the lost material takes away a 
                             fraction *gamma* of the orbital angular momentum
 
-                         **gamma = -1.0**
+                         **gamma = -2.0**
 =======================  =====================================================
 
 .. code-block:: ini
@@ -926,6 +1081,7 @@ sampling
                             ``1`` : activates initial-final WD mass relation
 
                          **ifflag = 0**
+
 ``wdflag``               Activates an alternate cooling law found in the description 
                          immediately following `Equation 1 <http://iopscience.iop.org/article/10.1086/374637/pdf#page=3>`_
                          in Hurley & Shara 2003. 
@@ -936,6 +1092,7 @@ sampling
                             ``1`` : activates modified cooling law
 
                          **wdflag = 1**
+
 ``epsnov``               Fraction of accreted matter retained in a nova eruption.
                          This is relevant for accretion onto degenerate objects; 
                          see Section 2.6.6.2 in `Hurley+2002 <https://ui.adsabs.harvard.edu/abs/2002MNRAS.329..897H/abstract>`_.
@@ -977,6 +1134,7 @@ sampling
                             ``1`` : uses an inverse decay
 
                          **bdecayfac = 1**
+
 ``bconst``               Sets the magnetic field decay time-scale for pulsars following
                          Section 3 of `Kiel+2008 <https://academic.oup.com/mnras/article/388/1/393/1013977>`_.
 
@@ -984,6 +1142,7 @@ sampling
                             -1 * *bconst*
 
                          **bconst = -3000**
+
 ``ck``                   Sets the magnetic field decay time-scale for pulsars following
                          Section 3 of `Kiel+2008 <https://academic.oup.com/mnras/article/388/1/393/1013977>`_.
 
@@ -1025,6 +1184,7 @@ sampling
                              ``positive values`` : sets the mixing factor
 
                          **rejuv_fac = 1.0**
+
 ``rejuvflag``            Sets whether to use the orginal prescription for mixing 
                          of main-sequence stars (based on equation 80 of `Hurley+2002 <https://ui.adsabs.harvard.edu/abs/2002MNRAS.329..897H/abstract>`_)
                          or whether to use the ratio of the pre-merger He core
