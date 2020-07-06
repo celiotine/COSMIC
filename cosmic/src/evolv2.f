@@ -211,8 +211,8 @@
       PARAMETER(kw3=619.2d0,wsun=9.46d+07,wx=9.46d+08)
       LOGICAL output
 
-      REAL*8 bppout(1000,23)
-      REAL*8 bcmout(1400000,42)
+      REAL*8 bppout(1000,43)
+      REAL*8 bcmout(1400000,38)
 *
       REAL*8 qc_fixed
       LOGICAL switchedCE,disrupt
