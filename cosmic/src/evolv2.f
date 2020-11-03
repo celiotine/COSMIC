@@ -155,7 +155,7 @@
       INTEGER loop,iter,intpol,k,ip,jp,j1,j2
       INTEGER bcm_index_out, bpp_index_out
       INTEGER kcomp1,kcomp2,formation(2)
-      PARAMETER(loop=1370000)
+      PARAMETER(loop=20000)
       INTEGER kstar(2),kw,kst,kw1,kw2,kmin,kmax
       INTEGER kstar1_bpp,kstar2_bpp
 *
@@ -212,7 +212,7 @@
       LOGICAL output
 
       REAL*8 bppout(1000,43)
-      REAL*8 bcmout(1400000,38)
+      REAL*8 bcmout(50000,38)
 *
       REAL*8 qc_fixed
       LOGICAL switchedCE,disrupt
