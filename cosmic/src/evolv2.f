@@ -212,12 +212,6 @@
       REAL*8 kw3,wsun,wx
       PARAMETER(kw3=619.2d0,wsun=9.46d+07,wx=9.46d+08)
       LOGICAL output
-<<<<<<< HEAD
-
-      REAL*8 bppout(1000,43)
-      REAL*8 bcmout(50000,38)
-=======
->>>>>>> upstream/develop
 *
       REAL*8 qc_fixed
       LOGICAL switchedCE,disrupt
