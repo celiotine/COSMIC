@@ -18,8 +18,9 @@
 # along with COSMIC.  If not, see <http://www.gnu.org/licenses/>
 
 # load tables
-from astropy.table import (Column, Table)
+from astropy.table import Column, Table
 from .initialbinarytable import InitialBinaryTable
+from .initialcmctable import InitialCMCTable
 
 # attach unified I/O
 from . import sampler

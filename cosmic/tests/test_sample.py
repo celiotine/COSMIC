@@ -132,7 +132,7 @@ class TestSample(unittest.TestCase):
         np.random.seed(2)
         # Check that the sample_secondary function samples secondary mass correctly
         mass1, total_mass = SAMPLECLASS.sample_primary(primary_model='salpeter55', size=1000000)
-        mass2 = SAMPLECLASS.sample_secondary(primary_mass = mass1)
+        mass2 = SAMPLECLASS.sample_secondary(primary_mass = mass1, qmin = 0.1)
         ind_massive, = np.where(mass1 > 5.0)
         q = mass2[ind_massive]/mass1[ind_massive]
         slope = linear_fit(q)
@@ -141,19 +141,19 @@ class TestSample(unittest.TestCase):
     def test_binary_select(self):
         np.random.seed(2)
         # Check that the binary select function chooses binarity properly
-        m1_b, m1_s, binfrac = SAMPLECLASS.binary_select(primary_mass=np.arange(1,100), binfrac_model=0.0)
+        m1_b, m1_s, binfrac, bin_index = SAMPLECLASS.binary_select(primary_mass=np.arange(1,100), binfrac_model=0.0)
         self.assertEqual(len(m1_b), 0)
-        m1_b, m1_s, binfrac = SAMPLECLASS.binary_select(primary_mass=np.arange(1,100), binfrac_model=1.0)
+        m1_b, m1_s, binfrac, bin_index = SAMPLECLASS.binary_select(primary_mass=np.arange(1,100), binfrac_model=1.0)
         self.assertEqual(len(m1_b), 99)
-        m1_b, m1_s, binfrac = SAMPLECLASS.binary_select(primary_mass=np.arange(1,100), binfrac_model='vanHaaften')
+        m1_b, m1_s, binfrac, bin_index = SAMPLECLASS.binary_select(primary_mass=np.arange(1,100), binfrac_model='vanHaaften')
         self.assertEqual(len(m1_b), N_BINARY_SELECT)
 
     def test_binary_fraction(self):
         np.random.seed(2)
         # Check that the binary fraction tracking is correct
-        m1_b, m1_s, binfrac = SAMPLECLASS.binary_select(primary_mass=np.arange(1,100), binfrac_model=0.5)
+        m1_b, m1_s, binfrac, bin_index = SAMPLECLASS.binary_select(primary_mass=np.arange(1,100), binfrac_model=0.5)
         self.assertEqual(binfrac.max(), 0.5)
-        m1_b, m1_s, binfrac = SAMPLECLASS.binary_select(primary_mass=np.arange(1,100), binfrac_model='vanHaaften')
+        m1_b, m1_s, binfrac, bin_index = SAMPLECLASS.binary_select(primary_mass=np.arange(1,100), binfrac_model='vanHaaften')
         self.assertEqual(binfrac.max(), VANHAAFTEN_BINFRAC_MAX)
         self.assertEqual(binfrac.min(), VANHAAFTEN_BINFRAC_MIN)
 
@@ -185,7 +185,7 @@ class TestSample(unittest.TestCase):
         # next do Sana12
         np.random.seed(4)
         mass1, total_mass = SAMPLECLASS.sample_primary(primary_model='kroupa01', size=1000000)
-        mass2 = SAMPLECLASS.sample_secondary(primary_mass = mass1)
+        mass2 = SAMPLECLASS.sample_secondary(primary_mass = mass1, qmin=0.1)
         ecc = SAMPLECLASS.sample_ecc(ecc_model='sana12', size=len(mass1))
         porb = SAMPLECLASS.sample_porb(mass1, mass2, ecc, 'sana12', size=len(mass1))
         power_slope = power_law_fit(np.log10(porb))
@@ -242,7 +242,7 @@ class TestSample(unittest.TestCase):
 
     def test_Moe_sample(self):
         # Test the multidim sampler and system-by-system binary fraction
-        m1, m2, porb, ecc, mass_singles, mass_binaries, n_singles, n_binaries, binfrac = MULTIDIMSAMPLECLASS.initial_sample(rand_seed = 2, size=10, nproc=1)
+        m1, m2, porb, ecc, mass_singles, mass_binaries, n_singles, n_binaries, binfrac = MULTIDIMSAMPLECLASS.initial_sample(rand_seed = 2, size=10, nproc=1, mp_seeds=[0])
         self.assertEqual(np.sum(mass_singles), MOE_TOTAL_MASS)
         self.assertAlmostEqual(binfrac.max(), MULTIDIM_BINFRAC_MAX)
         self.assertAlmostEqual(binfrac.min(), MULTIDIM_BINFRAC_MIN)
